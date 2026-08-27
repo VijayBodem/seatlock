@@ -7,6 +7,11 @@
     "dev:web": "npm --prefix apps/web run dev",
     "dev:api": "npm --prefix apps/api run start:dev",
     "build:web": "npm --prefix apps/web run build",
-    "build:api": "npm --prefix apps/api run build"
+    "build:api": "npm --prefix apps/api run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6"
   }
 }
