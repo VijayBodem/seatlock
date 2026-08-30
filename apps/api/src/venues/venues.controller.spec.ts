@@ -10,6 +10,8 @@ describe('VenuesController', () => {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -87,6 +89,46 @@ describe('VenuesController', () => {
       await expect(controller.findOne(1)).resolves.toEqual(venue);
 
       expect(venuesServiceMock.findOne).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a venue', async () => {
+      const dto = {
+        name: 'PVR Updated',
+      };
+
+      const updatedVenue = {
+        id: 1,
+        name: 'PVR Updated',
+        city: 'Hyderabad',
+        address: 'Kukatpally',
+      };
+
+      venuesServiceMock.update.mockResolvedValue(updatedVenue);
+
+      await expect(controller.update(1, dto)).resolves.toEqual(updatedVenue);
+
+      expect(venuesServiceMock.update).toHaveBeenCalledWith(1, dto);
+      expect(venuesServiceMock.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete a venue', async () => {
+      const deletedVenue = {
+        id: 1,
+        name: 'PVR Nexus Mall',
+        city: 'Hyderabad',
+        address: 'Kukatpally',
+      };
+
+      venuesServiceMock.remove.mockResolvedValue(deletedVenue);
+
+      await expect(controller.remove(1)).resolves.toEqual(deletedVenue);
+
+      expect(venuesServiceMock.remove).toHaveBeenCalledWith(1);
+      expect(venuesServiceMock.remove).toHaveBeenCalledTimes(1);
     });
   });
 });

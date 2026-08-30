@@ -8,12 +8,20 @@ import { VenuesService } from './venues.service.js';
 describe('VenuesService', () => {
   let service: VenuesService;
 
+  const updateMock = jest.fn();
+  const deleteMock = jest.fn();
+
+  const whereMock = jest.fn(() => ({
+    update: updateMock,
+    delete: deleteMock,
+  }));
+
   const venueModelMock = {
     create: jest.fn(),
     all: jest.fn(),
     first: jest.fn(),
+    where: whereMock,
   };
-
   const databaseMock = {
     orm: {
       public: {
@@ -115,6 +123,77 @@ describe('VenuesService', () => {
       expect(venueModelMock.first).toHaveBeenCalledWith({
         id: 999,
       });
+    });
+  });
+
+  describe('update', () => {
+    it('should update an existing venue', async () => {
+      const existingVenue = {
+        id: 1,
+        name: 'Old Name',
+        city: 'Hyderabad',
+        address: 'Old Address',
+      };
+
+      const updateDto = {
+        name: 'PVR Updated',
+      };
+
+      const updatedVenue = {
+        ...existingVenue,
+        ...updateDto,
+      };
+
+      venueModelMock.first.mockResolvedValue(existingVenue);
+      updateMock.mockResolvedValue(updatedVenue);
+
+      await expect(service.update(1, updateDto)).resolves.toEqual(updatedVenue);
+
+      expect(venueModelMock.first).toHaveBeenCalledWith({ id: 1 });
+      expect(whereMock).toHaveBeenCalledWith({ id: 1 });
+      expect(updateMock).toHaveBeenCalledWith(updateDto);
+    });
+
+    it('should throw NotFoundException when updating a missing venue', async () => {
+      venueModelMock.first.mockResolvedValue(null);
+
+      await expect(service.update(999, { name: 'Updated' })).rejects.toThrow(
+        new NotFoundException('Venue with id 999 not found'),
+      );
+
+      expect(whereMock).not.toHaveBeenCalled();
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete an existing venue', async () => {
+      const venue = {
+        id: 1,
+        name: 'PVR Nexus Mall',
+        city: 'Hyderabad',
+        address: 'Kukatpally',
+      };
+
+      venueModelMock.first.mockResolvedValue(venue);
+      deleteMock.mockResolvedValue(venue);
+
+      await expect(service.remove(1)).resolves.toEqual(venue);
+
+      expect(venueModelMock.first).toHaveBeenCalledWith({ id: 1 });
+      expect(whereMock).toHaveBeenCalledWith({ id: 1 });
+      expect(deleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw NotFoundException when deleting a missing venue', async () => {
+      venueModelMock.first.mockResolvedValue(null);
+
+      await expect(service.remove(999)).rejects.toThrow(
+        new NotFoundException('Venue with id 999 not found'),
+      );
+
+      expect(whereMock).not.toHaveBeenCalled();
+      expect(deleteMock).not.toHaveBeenCalled();
     });
   });
 });

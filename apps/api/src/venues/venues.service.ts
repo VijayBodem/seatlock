@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
 import { CreateVenueDto } from './dto/create-venue.dto.js';
+import { UpdateVenueDto } from './dto/update-venue.dto.js';
 
 @Injectable()
 export class VenuesService {
@@ -30,5 +31,17 @@ export class VenuesService {
     }
 
     return venue;
+  }
+
+  async update(id: number, updateVenueDto: UpdateVenueDto) {
+    await this.findOne(id);
+
+    return this.database.orm.public.Venue.where({ id }).update(updateVenueDto);
+  }
+
+  async remove(id: number) {
+    await this.findOne(id);
+
+    return this.database.orm.public.Venue.where({ id }).delete();
   }
 }
