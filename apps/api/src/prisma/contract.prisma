@@ -1,0 +1,42 @@
+// SeatLock database contract
+//
+// Physical venue structure:
+// Venue -> Screen -> Seat
+enum SeatType {
+  STANDARD
+  PREMIUM
+  ACCESSIBLE
+}
+
+model Venue {
+  id        Int                        @id @default(autoincrement())
+  name      String
+  city      String
+  address   String?
+  screens   Screen[]
+  createdAt TimestamptzString          @default(now())
+  updatedAt temporal.updatedAtString()
+}
+
+model Screen {
+  id        Int                        @id @default(autoincrement())
+  name      String
+  venue     Venue                      @relation(fields:[venueId], references:[id])
+  venueId   Int
+  seats     Seat[]
+  createdAt TimestamptzString          @default(now())
+  updatedAt temporal.updatedAtString()
+}
+
+model Seat {
+  id        Int                        @id @default(autoincrement())
+  row       String
+  number    Int
+  type      SeatType                   @default(STANDARD)
+  screen    Screen                     @relation(fields:[screenId], references:[id])
+  screenId  Int
+  createdAt TimestamptzString          @default(now())
+  updatedAt temporal.updatedAtString()
+
+  @@unique([screenId, row, number])
+}
