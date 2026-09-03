@@ -10,8 +10,13 @@ describe('ScreensService', () => {
 
   const screenAllMock = jest.fn();
 
+  const screenUpdateMock = jest.fn();
+  const screenDeleteMock = jest.fn();
+
   const screenWhereMock = jest.fn(() => ({
     all: screenAllMock,
+    update: screenUpdateMock,
+    delete: screenDeleteMock,
   }));
 
   const venueModelMock = {
@@ -20,6 +25,7 @@ describe('ScreensService', () => {
 
   const screenModelMock = {
     create: jest.fn(),
+    first: jest.fn(),
     where: screenWhereMock,
   };
 
@@ -142,6 +148,115 @@ describe('ScreensService', () => {
 
       expect(screenWhereMock).not.toHaveBeenCalled();
       expect(screenAllMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a screen when it exists', async () => {
+      const screen = {
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      };
+
+      screenModelMock.first.mockResolvedValue(screen);
+
+      await expect(service.findOne(10)).resolves.toEqual(screen);
+
+      expect(screenModelMock.first).toHaveBeenCalledWith({
+        id: 10,
+      });
+    });
+
+    it('should throw NotFoundException when screen does not exist', async () => {
+      screenModelMock.first.mockResolvedValue(null);
+
+      await expect(service.findOne(999)).rejects.toThrow(
+        new NotFoundException('Screen with id 999 not found'),
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('should update an existing screen', async () => {
+      const existingScreen = {
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      };
+
+      const updateDto = {
+        name: 'Screen 1 Updated',
+      };
+
+      const updatedScreen = {
+        ...existingScreen,
+        ...updateDto,
+      };
+
+      screenModelMock.first.mockResolvedValue(existingScreen);
+      screenUpdateMock.mockResolvedValue(updatedScreen);
+
+      await expect(service.update(10, updateDto)).resolves.toEqual(
+        updatedScreen,
+      );
+
+      expect(screenModelMock.first).toHaveBeenCalledWith({
+        id: 10,
+      });
+
+      expect(screenWhereMock).toHaveBeenCalledWith({
+        id: 10,
+      });
+
+      expect(screenUpdateMock).toHaveBeenCalledWith(updateDto);
+    });
+
+    it('should throw NotFoundException when updating a missing screen', async () => {
+      screenModelMock.first.mockResolvedValue(null);
+
+      await expect(
+        service.update(999, { name: 'Updated Screen' }),
+      ).rejects.toThrow(new NotFoundException('Screen with id 999 not found'));
+
+      expect(screenWhereMock).not.toHaveBeenCalled();
+      expect(screenUpdateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete an existing screen', async () => {
+      const screen = {
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      };
+
+      screenModelMock.first.mockResolvedValue(screen);
+      screenDeleteMock.mockResolvedValue(screen);
+
+      await expect(service.remove(10)).resolves.toEqual(screen);
+
+      expect(screenModelMock.first).toHaveBeenCalledWith({
+        id: 10,
+      });
+
+      expect(screenWhereMock).toHaveBeenCalledWith({
+        id: 10,
+      });
+
+      expect(screenDeleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw NotFoundException when deleting a missing screen', async () => {
+      screenModelMock.first.mockResolvedValue(null);
+
+      await expect(service.remove(999)).rejects.toThrow(
+        new NotFoundException('Screen with id 999 not found'),
+      );
+
+      expect(screenWhereMock).not.toHaveBeenCalled();
+      expect(screenDeleteMock).not.toHaveBeenCalled();
     });
   });
 });
