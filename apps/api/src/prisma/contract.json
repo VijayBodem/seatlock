@@ -12,6 +12,10 @@
       "model": "Seat",
       "namespace": "public"
     },
+    "showtime": {
+      "model": "Showtime",
+      "namespace": "public"
+    },
     "venue": {
       "model": "Venue",
       "namespace": "public"
@@ -91,6 +95,21 @@
                 },
                 "to": {
                   "model": "Seat",
+                  "namespace": "public"
+                }
+              },
+              "showtimes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "screenId"
+                  ]
+                },
+                "to": {
+                  "model": "Showtime",
                   "namespace": "public"
                 }
               },
@@ -233,6 +252,93 @@
               },
               "namespaceId": "public",
               "table": "seat"
+            }
+          },
+          "Showtime": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "screenId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "startsAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "screen": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "screenId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Screen",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "screenId": {
+                  "column": "screenId"
+                },
+                "startsAt": {
+                  "column": "startsAt"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "showtime"
             }
           },
           "Venue": {
@@ -508,6 +614,82 @@
                 }
               ]
             },
+            "showtime": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "screenId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "startsAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "screenId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "showtime"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "screen"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "screenId"
+                  ],
+                  "name": "showtime_screenId_idx_2d3dbe54",
+                  "prefix": "showtime_screenId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "venue": {
               "columns": {
                 "address": {
@@ -574,10 +756,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8560d1c7a86c963faa3d720077bc59108028e0aa0edce7d302a1ba9ce02d722d"
+    "storageHash": "dc2b498fddb06a15dca71feca1b08777b251d76e95d61b14a21a79e7aaff6a0a"
   },
   "execution": {
-    "executionHash": "ba91764c4fc83398dc92db796d2e35ea1e4b3b138c2103117e0a2a2f8bb56b54",
+    "executionHash": "c6dab3f6a242d7ab044bb5efb692efcc81b4b103296ba1f212f257ac50ec7729",
     "mutations": {
       "defaults": [
         {
@@ -608,6 +790,21 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "seat"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "showtime"
           }
         },
         {

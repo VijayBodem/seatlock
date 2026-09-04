@@ -5,9 +5,16 @@ import { DatabaseModule } from './database/database.module.js';
 import { VenuesModule } from './venues/venues.module.js';
 import { ScreensModule } from './screens/screens.module.js';
 import { SeatsModule } from './seats/seats.module.js';
+import { ShowtimesModule } from './showtimes/showtimes.module.js';
 
 @Module({
-  imports: [DatabaseModule, VenuesModule, ScreensModule, SeatsModule],
+  imports: [
+    DatabaseModule,
+    VenuesModule,
+    ScreensModule,
+    SeatsModule,
+    ShowtimesModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

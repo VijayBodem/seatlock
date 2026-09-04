@@ -24,6 +24,7 @@ model Screen {
   venue     Venue                      @relation(fields:[venueId], references:[id])
   venueId   Int
   seats     Seat[]
+  showtimes Showtime[]
   createdAt TimestamptzString          @default(now())
   updatedAt temporal.updatedAtString()
 }
@@ -39,4 +40,14 @@ model Seat {
   updatedAt temporal.updatedAtString()
 
   @@unique([screenId, row, number])
+}
+
+model Showtime {
+  id        Int                        @id @default(autoincrement())
+  title     String
+  startsAt  TimestamptzString
+  screen    Screen                     @relation(fields:[screenId], references:[id])
+  screenId  Int
+  createdAt TimestamptzString          @default(now())
+  updatedAt temporal.updatedAtString()
 }

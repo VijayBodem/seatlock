@@ -1,0 +1,122 @@
+[
+  {
+    "id": "table.showtime",
+    "label": "Create table \"showtime\"",
+    "summary": "Creates table \"showtime\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "showtime"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"showtime\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtime\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"showtime\"",
+        "sql": "CREATE TABLE \"public\".\"showtime\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"screenId\" int4 NOT NULL,\n  \"startsAt\" timestamptz NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"showtime\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtime\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.showtime.showtime_screenId_idx_2d3dbe54",
+    "label": "Create index \"showtime_screenId_idx_2d3dbe54\" on \"showtime\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "showtime_screenId_idx_2d3dbe54",
+        "table": "showtime"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"showtime_screenId_idx_2d3dbe54\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtime_screenId_idx_2d3dbe54\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"showtime_screenId_idx_2d3dbe54\"",
+        "sql": "CREATE INDEX \"showtime_screenId_idx_2d3dbe54\" ON \"public\".\"showtime\" (\"screenId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"showtime_screenId_idx_2d3dbe54\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtime_screenId_idx_2d3dbe54\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.showtime.showtime_screenId_fkey",
+    "label": "Add foreign key \"showtime_screenId_fkey\" on \"showtime\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "showtime_screenId_fkey",
+        "table": "showtime"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"showtime_screenId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtime_screenId_fkey",
+          "public",
+          "\"public\".\"showtime\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"showtime_screenId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"showtime\"\nADD CONSTRAINT \"showtime_screenId_fkey\"\nFOREIGN KEY (\"screenId\")\nREFERENCES \"public\".\"screen\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"showtime_screenId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtime_screenId_fkey",
+          "public",
+          "\"public\".\"showtime\""
+        ]
+      }
+    ]
+  }
+]

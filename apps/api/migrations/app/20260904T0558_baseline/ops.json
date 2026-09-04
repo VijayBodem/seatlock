@@ -1,0 +1,340 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.screen",
+    "label": "Create table \"screen\"",
+    "summary": "Creates table \"screen\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "screen"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"screen\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"screen\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"screen\"",
+        "sql": "CREATE TABLE \"public\".\"screen\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"venueId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"screen\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"screen\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.seat",
+    "label": "Create table \"seat\"",
+    "summary": "Creates table \"seat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "seat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"seat\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seat\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"seat\"",
+        "sql": "CREATE TABLE \"public\".\"seat\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"number\" int4 NOT NULL,\n  \"row\" text NOT NULL,\n  \"screenId\" int4 NOT NULL,\n  \"type\" text DEFAULT 'STANDARD' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"seat_type_check_c417c128\" CHECK (\"type\" IN ('STANDARD', 'PREMIUM', 'ACCESSIBLE'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"seat\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seat\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.venue",
+    "label": "Create table \"venue\"",
+    "summary": "Creates table \"venue\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "venue"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"venue\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"venue\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"venue\"",
+        "sql": "CREATE TABLE \"public\".\"venue\" (\n  \"address\" text,\n  \"city\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"name\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"venue\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"venue\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.seat.seat_screenId_row_number_key",
+    "label": "Add unique constraint on \"seat\" (screenId, row, number)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "seat_screenId_row_number_key",
+        "table": "seat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"seat_screenId_row_number_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "seat_screenId_row_number_key",
+          "public",
+          "\"public\".\"seat\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"seat_screenId_row_number_key\"",
+        "sql": "ALTER TABLE \"public\".\"seat\" ADD CONSTRAINT \"seat_screenId_row_number_key\" UNIQUE (\"screenId\", \"row\", \"number\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"seat_screenId_row_number_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "seat_screenId_row_number_key",
+          "public",
+          "\"public\".\"seat\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.screen.screen_venueId_idx_b49e8dab",
+    "label": "Create index \"screen_venueId_idx_b49e8dab\" on \"screen\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "screen_venueId_idx_b49e8dab",
+        "table": "screen"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"screen_venueId_idx_b49e8dab\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"screen_venueId_idx_b49e8dab\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"screen_venueId_idx_b49e8dab\"",
+        "sql": "CREATE INDEX \"screen_venueId_idx_b49e8dab\" ON \"public\".\"screen\" (\"venueId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"screen_venueId_idx_b49e8dab\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"screen_venueId_idx_b49e8dab\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.seat.seat_screenId_idx_2d3dbe54",
+    "label": "Create index \"seat_screenId_idx_2d3dbe54\" on \"seat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "seat_screenId_idx_2d3dbe54",
+        "table": "seat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"seat_screenId_idx_2d3dbe54\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seat_screenId_idx_2d3dbe54\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"seat_screenId_idx_2d3dbe54\"",
+        "sql": "CREATE INDEX \"seat_screenId_idx_2d3dbe54\" ON \"public\".\"seat\" (\"screenId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"seat_screenId_idx_2d3dbe54\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seat_screenId_idx_2d3dbe54\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.screen.screen_venueId_fkey",
+    "label": "Add foreign key \"screen_venueId_fkey\" on \"screen\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "screen_venueId_fkey",
+        "table": "screen"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"screen_venueId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "screen_venueId_fkey",
+          "public",
+          "\"public\".\"screen\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"screen_venueId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"screen\"\nADD CONSTRAINT \"screen_venueId_fkey\"\nFOREIGN KEY (\"venueId\")\nREFERENCES \"public\".\"venue\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"screen_venueId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "screen_venueId_fkey",
+          "public",
+          "\"public\".\"screen\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.seat.seat_screenId_fkey",
+    "label": "Add foreign key \"seat_screenId_fkey\" on \"seat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "seat_screenId_fkey",
+        "table": "seat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"seat_screenId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "seat_screenId_fkey",
+          "public",
+          "\"public\".\"seat\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"seat_screenId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"seat\"\nADD CONSTRAINT \"seat_screenId_fkey\"\nFOREIGN KEY (\"screenId\")\nREFERENCES \"public\".\"screen\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"seat_screenId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "seat_screenId_fkey",
+          "public",
+          "\"public\".\"seat\""
+        ]
+      }
+    ]
+  }
+]
