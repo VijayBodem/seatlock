@@ -10,8 +10,13 @@ describe('ShowtimesService', () => {
 
   const showtimeAllMock = jest.fn();
 
+  const showtimeUpdateMock = jest.fn();
+  const showtimeDeleteMock = jest.fn();
+
   const showtimeWhereMock = jest.fn(() => ({
     all: showtimeAllMock,
+    update: showtimeUpdateMock,
+    delete: showtimeDeleteMock,
   }));
 
   const screenModelMock = {
@@ -178,6 +183,92 @@ describe('ShowtimesService', () => {
       await expect(service.findOne(999)).rejects.toThrow(
         new NotFoundException('Showtime with id 999 not found'),
       );
+    });
+  });
+
+  describe('update', () => {
+    it('should update an existing showtime', async () => {
+      const existingShowtime = {
+        id: 100,
+        title: 'Interstellar',
+        startsAt: '2026-09-05T19:30:00+05:30',
+        screenId: 10,
+      };
+
+      const dto = {
+        title: 'Interstellar IMAX',
+        startsAt: '2026-09-05T20:00:00+05:30',
+      };
+
+      const updatedShowtime = {
+        ...existingShowtime,
+        ...dto,
+      };
+
+      showtimeModelMock.first.mockResolvedValue(existingShowtime);
+      showtimeUpdateMock.mockResolvedValue(updatedShowtime);
+
+      await expect(service.update(100, dto)).resolves.toEqual(updatedShowtime);
+
+      expect(showtimeModelMock.first).toHaveBeenCalledWith({
+        id: 100,
+      });
+
+      expect(showtimeWhereMock).toHaveBeenCalledWith({
+        id: 100,
+      });
+
+      expect(showtimeUpdateMock).toHaveBeenCalledWith(dto);
+    });
+
+    it('should throw NotFoundException when updating a missing showtime', async () => {
+      showtimeModelMock.first.mockResolvedValue(null);
+
+      await expect(
+        service.update(999, {
+          title: 'Updated title',
+        }),
+      ).rejects.toThrow(
+        new NotFoundException('Showtime with id 999 not found'),
+      );
+
+      expect(showtimeUpdateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete an existing showtime', async () => {
+      const existingShowtime = {
+        id: 100,
+        title: 'Interstellar',
+        startsAt: '2026-09-05T19:30:00+05:30',
+        screenId: 10,
+      };
+
+      showtimeModelMock.first.mockResolvedValue(existingShowtime);
+      showtimeDeleteMock.mockResolvedValue(existingShowtime);
+
+      await expect(service.remove(100)).resolves.toEqual(existingShowtime);
+
+      expect(showtimeModelMock.first).toHaveBeenCalledWith({
+        id: 100,
+      });
+
+      expect(showtimeWhereMock).toHaveBeenCalledWith({
+        id: 100,
+      });
+
+      expect(showtimeDeleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw NotFoundException when deleting a missing showtime', async () => {
+      showtimeModelMock.first.mockResolvedValue(null);
+
+      await expect(service.remove(999)).rejects.toThrow(
+        new NotFoundException('Showtime with id 999 not found'),
+      );
+
+      expect(showtimeDeleteMock).not.toHaveBeenCalled();
     });
   });
 });

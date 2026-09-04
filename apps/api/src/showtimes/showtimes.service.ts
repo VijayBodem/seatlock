@@ -3,6 +3,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
 import { CreateShowtimeDto } from './dto/create-showtime.dto.js';
+import { UpdateShowtimeDto } from './dto/update-showtime.dto.js';
 
 @Injectable()
 export class ShowtimesService {
@@ -49,5 +50,19 @@ export class ShowtimesService {
     }
 
     return showtime;
+  }
+
+  async update(id: number, updateShowtimeDto: UpdateShowtimeDto) {
+    await this.findOne(id);
+
+    return this.database.orm.public.Showtime.where({ id }).update(
+      updateShowtimeDto,
+    );
+  }
+
+  async remove(id: number) {
+    await this.findOne(id);
+
+    return this.database.orm.public.Showtime.where({ id }).delete();
   }
 }
