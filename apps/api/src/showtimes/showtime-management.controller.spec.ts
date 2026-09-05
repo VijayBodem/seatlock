@@ -9,6 +9,7 @@ describe('ShowtimeManagementController', () => {
 
   const showtimesServiceMock = {
     findOne: jest.fn(),
+    findSeats: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
   };
@@ -48,6 +49,29 @@ describe('ShowtimeManagementController', () => {
     await expect(controller.findOne(100)).resolves.toEqual(showtime);
 
     expect(showtimesServiceMock.findOne).toHaveBeenCalledWith(100);
+  });
+
+  it('should return seat inventory for a showtime', async () => {
+    const seats = [
+      {
+        id: 1,
+        showtimeId: 100,
+        seatId: 201,
+        status: 'AVAILABLE',
+      },
+      {
+        id: 2,
+        showtimeId: 100,
+        seatId: 202,
+        status: 'AVAILABLE',
+      },
+    ];
+
+    showtimesServiceMock.findSeats.mockResolvedValue(seats);
+
+    await expect(controller.findSeats(100)).resolves.toEqual(seats);
+
+    expect(showtimesServiceMock.findSeats).toHaveBeenCalledWith(100);
   });
 
   it('should update a showtime', async () => {

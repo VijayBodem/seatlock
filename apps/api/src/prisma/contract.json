@@ -16,6 +16,10 @@
       "model": "Showtime",
       "namespace": "public"
     },
+    "showtimeSeat": {
+      "model": "ShowtimeSeat",
+      "namespace": "public"
+    },
     "venue": {
       "model": "Venue",
       "namespace": "public"
@@ -39,6 +43,23 @@
               {
                 "name": "ACCESSIBLE",
                 "value": "ACCESSIBLE"
+              }
+            ]
+          },
+          "ShowtimeSeatStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "AVAILABLE",
+                "value": "AVAILABLE"
+              },
+              {
+                "name": "HELD",
+                "value": "HELD"
+              },
+              {
+                "name": "BOOKED",
+                "value": "BOOKED"
               }
             ]
           }
@@ -224,6 +245,21 @@
                   "model": "Screen",
                   "namespace": "public"
                 }
+              },
+              "showtimeSeats": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "seatId"
+                  ]
+                },
+                "to": {
+                  "model": "ShowtimeSeat",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -314,6 +350,21 @@
                   "model": "Screen",
                   "namespace": "public"
                 }
+              },
+              "showtimeSeats": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "showtimeId"
+                  ]
+                },
+                "to": {
+                  "model": "ShowtimeSeat",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -339,6 +390,114 @@
               },
               "namespaceId": "public",
               "table": "showtime"
+            }
+          },
+          "ShowtimeSeat": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "seatId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "showtimeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "ShowtimeSeatStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "seat": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "seatId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Seat",
+                  "namespace": "public"
+                }
+              },
+              "showtime": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "showtimeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Showtime",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "seatId": {
+                  "column": "seatId"
+                },
+                "showtimeId": {
+                  "column": "showtimeId"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "showtimeSeat"
             }
           },
           "Venue": {
@@ -690,6 +849,130 @@
               },
               "uniques": []
             },
+            "showtimeSeat": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('AVAILABLE', 'HELD', 'BOOKED')",
+                  "name": "showtimeSeat_status_check_95233df9",
+                  "prefix": "showtimeSeat_status_check"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "seatId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "showtimeId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "AVAILABLE"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "ShowtimeSeatStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "showtimeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "showtimeSeat"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "showtime"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "seatId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "showtimeSeat"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "seat"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "seatId"
+                  ],
+                  "name": "showtimeSeat_seatId_idx_3076c3cd",
+                  "prefix": "showtimeSeat_seatId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "showtimeId"
+                  ],
+                  "name": "showtimeSeat_showtimeId_idx_4ae2449a",
+                  "prefix": "showtimeSeat_showtimeId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "showtimeId",
+                    "seatId"
+                  ]
+                }
+              ]
+            },
             "venue": {
               "columns": {
                 "address": {
@@ -749,6 +1032,14 @@
                 "PREMIUM",
                 "ACCESSIBLE"
               ]
+            },
+            "ShowtimeSeatStatus": {
+              "kind": "valueSet",
+              "values": [
+                "AVAILABLE",
+                "HELD",
+                "BOOKED"
+              ]
             }
           }
         },
@@ -756,10 +1047,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "dc2b498fddb06a15dca71feca1b08777b251d76e95d61b14a21a79e7aaff6a0a"
+    "storageHash": "e4cf50b6c7e25848b536786af8e0fc2ed8391eb623fb2bba74477a90bfba5ed1"
   },
   "execution": {
-    "executionHash": "c6dab3f6a242d7ab044bb5efb692efcc81b4b103296ba1f212f257ac50ec7729",
+    "executionHash": "1490f78bb0668b99ff53776bd76e792396bfa2b2a522cfcec62cd361a70b2ea8",
     "mutations": {
       "defaults": [
         {
@@ -805,6 +1096,21 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "showtime"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "showtimeSeat"
           }
         },
         {

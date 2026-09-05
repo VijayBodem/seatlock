@@ -1,0 +1,245 @@
+[
+  {
+    "id": "table.showtimeSeat",
+    "label": "Create table \"showtimeSeat\"",
+    "summary": "Creates table \"showtimeSeat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"showtimeSeat\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"showtimeSeat\"",
+        "sql": "CREATE TABLE \"public\".\"showtimeSeat\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"seatId\" int4 NOT NULL,\n  \"showtimeId\" int4 NOT NULL,\n  \"status\" text DEFAULT 'AVAILABLE' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"showtimeSeat_status_check_95233df9\" CHECK (\"status\" IN ('AVAILABLE', 'HELD', 'BOOKED'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"showtimeSeat\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.showtimeSeat.showtimeSeat_showtimeId_seatId_key",
+    "label": "Add unique constraint on \"showtimeSeat\" (showtimeId, seatId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "showtimeSeat_showtimeId_seatId_key",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"showtimeSeat_showtimeId_seatId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtimeSeat_showtimeId_seatId_key",
+          "public",
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"showtimeSeat_showtimeId_seatId_key\"",
+        "sql": "ALTER TABLE \"public\".\"showtimeSeat\" ADD CONSTRAINT \"showtimeSeat_showtimeId_seatId_key\" UNIQUE (\"showtimeId\", \"seatId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"showtimeSeat_showtimeId_seatId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtimeSeat_showtimeId_seatId_key",
+          "public",
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.showtimeSeat.showtimeSeat_seatId_idx_3076c3cd",
+    "label": "Create index \"showtimeSeat_seatId_idx_3076c3cd\" on \"showtimeSeat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "showtimeSeat_seatId_idx_3076c3cd",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"showtimeSeat_seatId_idx_3076c3cd\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtimeSeat_seatId_idx_3076c3cd\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"showtimeSeat_seatId_idx_3076c3cd\"",
+        "sql": "CREATE INDEX \"showtimeSeat_seatId_idx_3076c3cd\" ON \"public\".\"showtimeSeat\" (\"seatId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"showtimeSeat_seatId_idx_3076c3cd\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtimeSeat_seatId_idx_3076c3cd\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.showtimeSeat.showtimeSeat_showtimeId_idx_4ae2449a",
+    "label": "Create index \"showtimeSeat_showtimeId_idx_4ae2449a\" on \"showtimeSeat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "showtimeSeat_showtimeId_idx_4ae2449a",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"showtimeSeat_showtimeId_idx_4ae2449a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtimeSeat_showtimeId_idx_4ae2449a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"showtimeSeat_showtimeId_idx_4ae2449a\"",
+        "sql": "CREATE INDEX \"showtimeSeat_showtimeId_idx_4ae2449a\" ON \"public\".\"showtimeSeat\" (\"showtimeId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"showtimeSeat_showtimeId_idx_4ae2449a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtimeSeat_showtimeId_idx_4ae2449a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.showtimeSeat.showtimeSeat_showtimeId_fkey",
+    "label": "Add foreign key \"showtimeSeat_showtimeId_fkey\" on \"showtimeSeat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "showtimeSeat_showtimeId_fkey",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"showtimeSeat_showtimeId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtimeSeat_showtimeId_fkey",
+          "public",
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"showtimeSeat_showtimeId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"showtimeSeat\"\nADD CONSTRAINT \"showtimeSeat_showtimeId_fkey\"\nFOREIGN KEY (\"showtimeId\")\nREFERENCES \"public\".\"showtime\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"showtimeSeat_showtimeId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtimeSeat_showtimeId_fkey",
+          "public",
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.showtimeSeat.showtimeSeat_seatId_fkey",
+    "label": "Add foreign key \"showtimeSeat_seatId_fkey\" on \"showtimeSeat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "showtimeSeat_seatId_fkey",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"showtimeSeat_seatId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtimeSeat_seatId_fkey",
+          "public",
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"showtimeSeat_seatId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"showtimeSeat\"\nADD CONSTRAINT \"showtimeSeat_seatId_fkey\"\nFOREIGN KEY (\"seatId\")\nREFERENCES \"public\".\"seat\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"showtimeSeat_seatId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtimeSeat_seatId_fkey",
+          "public",
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ]
+  }
+]

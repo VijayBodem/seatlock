@@ -20,6 +20,11 @@ export class ShowtimeManagementController {
     return this.showtimesService.findOne(id);
   }
 
+  @Get(':id/seats')
+  findSeats(@Param('id', ParseIntPipe) id: number) {
+    return this.showtimesService.findSeats(id);
+  }
+
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,

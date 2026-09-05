@@ -8,6 +8,12 @@ enum SeatType {
   ACCESSIBLE
 }
 
+enum ShowtimeSeatStatus {
+  AVAILABLE
+  HELD
+  BOOKED
+}
+
 model Venue {
   id        Int                        @id @default(autoincrement())
   name      String
@@ -36,6 +42,7 @@ model Seat {
   type      SeatType                   @default(STANDARD)
   screen    Screen                     @relation(fields:[screenId], references:[id])
   screenId  Int
+  showtimeSeats ShowtimeSeat[]
   createdAt TimestamptzString          @default(now())
   updatedAt temporal.updatedAtString()
 
@@ -48,6 +55,20 @@ model Showtime {
   startsAt  TimestamptzString
   screen    Screen                     @relation(fields:[screenId], references:[id])
   screenId  Int
+  showtimeSeats ShowtimeSeat[]
   createdAt TimestamptzString          @default(now())
   updatedAt temporal.updatedAtString()
+}
+
+model ShowtimeSeat {
+  id         Int                @id @default(autoincrement())
+  showtime   Showtime           @relation(fields: [showtimeId], references: [id])
+  showtimeId Int
+  seat       Seat               @relation(fields: [seatId], references: [id])
+  seatId     Int
+  status     ShowtimeSeatStatus @default(AVAILABLE)
+  createdAt  TimestamptzString  @default(now())
+  updatedAt  temporal.updatedAtString()
+
+  @@unique([showtimeId, seatId])
 }
