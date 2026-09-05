@@ -12,6 +12,10 @@
       "model": "Seat",
       "namespace": "public"
     },
+    "seatHold": {
+      "model": "SeatHold",
+      "namespace": "public"
+    },
     "showtime": {
       "model": "Showtime",
       "namespace": "public"
@@ -29,6 +33,27 @@
     "namespaces": {
       "public": {
         "enum": {
+          "SeatHoldStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "ACTIVE",
+                "value": "ACTIVE"
+              },
+              {
+                "name": "COMPLETED",
+                "value": "COMPLETED"
+              },
+              {
+                "name": "EXPIRED",
+                "value": "EXPIRED"
+              },
+              {
+                "name": "CANCELLED",
+                "value": "CANCELLED"
+              }
+            ]
+          },
           "SeatType": {
             "codecId": "pg/text@1",
             "members": [
@@ -290,6 +315,114 @@
               "table": "seat"
             }
           },
+          "SeatHold": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "showtimeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "SeatHoldStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "seats": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "holdId"
+                  ]
+                },
+                "to": {
+                  "model": "ShowtimeSeat",
+                  "namespace": "public"
+                }
+              },
+              "showtime": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "showtimeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Showtime",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "expiresAt": {
+                  "column": "expiresAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "showtimeId": {
+                  "column": "showtimeId"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "seatHold"
+            }
+          },
           "Showtime": {
             "fields": {
               "createdAt": {
@@ -336,6 +469,21 @@
               }
             },
             "relations": {
+              "holds": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "showtimeId"
+                  ]
+                },
+                "to": {
+                  "model": "SeatHold",
+                  "namespace": "public"
+                }
+              },
               "screen": {
                 "cardinality": "N:1",
                 "on": {
@@ -401,6 +549,13 @@
                   "kind": "scalar"
                 }
               },
+              "holdId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -444,6 +599,21 @@
               }
             },
             "relations": {
+              "hold": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "holdId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "SeatHold",
+                  "namespace": "public"
+                }
+              },
               "seat": {
                 "cardinality": "N:1",
                 "on": {
@@ -479,6 +649,9 @@
               "fields": {
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "holdId": {
+                  "column": "holdId"
                 },
                 "id": {
                   "column": "id"
@@ -773,6 +946,99 @@
                 }
               ]
             },
+            "seatHold": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('ACTIVE', 'COMPLETED', 'EXPIRED', 'CANCELLED')",
+                  "name": "seatHold_status_check_3842699d",
+                  "prefix": "seatHold_status_check"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "expiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "showtimeId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "ACTIVE"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "SeatHoldStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "showtimeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "seatHold"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "showtime"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "showtimeId"
+                  ],
+                  "name": "seatHold_showtimeId_idx_4ae2449a",
+                  "prefix": "seatHold_showtimeId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "showtime": {
               "columns": {
                 "createdAt": {
@@ -867,6 +1133,11 @@
                   "nativeType": "timestamptz",
                   "nullable": false
                 },
+                "holdId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/int4@1",
                   "default": {
@@ -939,9 +1210,33 @@
                     "namespaceId": "public",
                     "tableName": "seat"
                   }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "holdId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "showtimeSeat"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "seatHold"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "holdId"
+                  ],
+                  "name": "showtimeSeat_holdId_idx_c9785d82",
+                  "prefix": "showtimeSeat_holdId_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "seatId"
@@ -1025,6 +1320,15 @@
             }
           },
           "valueSet": {
+            "SeatHoldStatus": {
+              "kind": "valueSet",
+              "values": [
+                "ACTIVE",
+                "COMPLETED",
+                "EXPIRED",
+                "CANCELLED"
+              ]
+            },
             "SeatType": {
               "kind": "valueSet",
               "values": [
@@ -1047,10 +1351,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e4cf50b6c7e25848b536786af8e0fc2ed8391eb623fb2bba74477a90bfba5ed1"
+    "storageHash": "b6b1a19dc382e44b28e5b7346de463c83e6cef73463a351b6c2a3ae930270d6b"
   },
   "execution": {
-    "executionHash": "1490f78bb0668b99ff53776bd76e792396bfa2b2a522cfcec62cd361a70b2ea8",
+    "executionHash": "c59c85532f145badb4b2e91ed99b2d2e39cb437e803d84cf03c6dcb7b12e4321",
     "mutations": {
       "defaults": [
         {
@@ -1081,6 +1385,21 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "seat"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "seatHold"
           }
         },
         {

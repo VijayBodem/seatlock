@@ -1,0 +1,245 @@
+[
+  {
+    "id": "table.seatHold",
+    "label": "Create table \"seatHold\"",
+    "summary": "Creates table \"seatHold\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "seatHold"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"seatHold\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seatHold\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"seatHold\"",
+        "sql": "CREATE TABLE \"public\".\"seatHold\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamptz NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"showtimeId\" int4 NOT NULL,\n  \"status\" text DEFAULT 'ACTIVE' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"seatHold_status_check_3842699d\" CHECK (\"status\" IN ('ACTIVE', 'COMPLETED', 'EXPIRED', 'CANCELLED'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"seatHold\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seatHold\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.showtimeSeat.holdId",
+    "label": "Add column \"holdId\" to \"showtimeSeat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "holdId",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"holdId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "showtimeSeat",
+          "holdId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"holdId\"",
+        "sql": "ALTER TABLE \"public\".\"showtimeSeat\" ADD COLUMN \"holdId\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"holdId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "showtimeSeat",
+          "holdId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.seatHold.seatHold_showtimeId_idx_4ae2449a",
+    "label": "Create index \"seatHold_showtimeId_idx_4ae2449a\" on \"seatHold\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "seatHold_showtimeId_idx_4ae2449a",
+        "table": "seatHold"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"seatHold_showtimeId_idx_4ae2449a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seatHold_showtimeId_idx_4ae2449a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"seatHold_showtimeId_idx_4ae2449a\"",
+        "sql": "CREATE INDEX \"seatHold_showtimeId_idx_4ae2449a\" ON \"public\".\"seatHold\" (\"showtimeId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"seatHold_showtimeId_idx_4ae2449a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seatHold_showtimeId_idx_4ae2449a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.showtimeSeat.showtimeSeat_holdId_idx_c9785d82",
+    "label": "Create index \"showtimeSeat_holdId_idx_c9785d82\" on \"showtimeSeat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "showtimeSeat_holdId_idx_c9785d82",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"showtimeSeat_holdId_idx_c9785d82\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtimeSeat_holdId_idx_c9785d82\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"showtimeSeat_holdId_idx_c9785d82\"",
+        "sql": "CREATE INDEX \"showtimeSeat_holdId_idx_c9785d82\" ON \"public\".\"showtimeSeat\" (\"holdId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"showtimeSeat_holdId_idx_c9785d82\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"showtimeSeat_holdId_idx_c9785d82\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.seatHold.seatHold_showtimeId_fkey",
+    "label": "Add foreign key \"seatHold_showtimeId_fkey\" on \"seatHold\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "seatHold_showtimeId_fkey",
+        "table": "seatHold"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"seatHold_showtimeId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "seatHold_showtimeId_fkey",
+          "public",
+          "\"public\".\"seatHold\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"seatHold_showtimeId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"seatHold\"\nADD CONSTRAINT \"seatHold_showtimeId_fkey\"\nFOREIGN KEY (\"showtimeId\")\nREFERENCES \"public\".\"showtime\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"seatHold_showtimeId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "seatHold_showtimeId_fkey",
+          "public",
+          "\"public\".\"seatHold\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.showtimeSeat.showtimeSeat_holdId_fkey",
+    "label": "Add foreign key \"showtimeSeat_holdId_fkey\" on \"showtimeSeat\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "showtimeSeat_holdId_fkey",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"showtimeSeat_holdId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtimeSeat_holdId_fkey",
+          "public",
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"showtimeSeat_holdId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"showtimeSeat\"\nADD CONSTRAINT \"showtimeSeat_holdId_fkey\"\nFOREIGN KEY (\"holdId\")\nREFERENCES \"public\".\"seatHold\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"showtimeSeat_holdId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "showtimeSeat_holdId_fkey",
+          "public",
+          "\"public\".\"showtimeSeat\""
+        ]
+      }
+    ]
+  }
+]
