@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { DATABASE } from '../database/database.constants.js';
+import { HoldsService } from '../holds/holds.service.js';
 import { ShowtimesService } from './showtimes.service.js';
 
 describe('ShowtimesService', () => {
@@ -51,6 +52,7 @@ describe('ShowtimesService', () => {
     create: showtimeSeatCreateMock,
     where: showtimeSeatWhereMock,
   };
+
   const transactionClientMock = {
     orm: {
       public: {
@@ -77,6 +79,12 @@ describe('ShowtimesService', () => {
     transaction: transactionMock,
   };
 
+  const expireStaleHoldsMock = jest.fn();
+
+  const holdsServiceMock = {
+    expireStaleHolds: expireStaleHoldsMock,
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -86,6 +94,10 @@ describe('ShowtimesService', () => {
         {
           provide: DATABASE,
           useValue: databaseMock,
+        },
+        {
+          provide: HoldsService,
+          useValue: holdsServiceMock,
         },
       ],
     }).compile();
@@ -309,7 +321,7 @@ describe('ShowtimesService', () => {
   });
 
   describe('findSeats', () => {
-    it('should return seat inventory for an existing showtime', async () => {
+    it('should expire stale holds before returning seat inventory', async () => {
       const showtime = {
         id: 100,
         title: 'Interstellar',
@@ -333,6 +345,7 @@ describe('ShowtimesService', () => {
       ];
 
       showtimeModelMock.first.mockResolvedValue(showtime);
+      expireStaleHoldsMock.mockResolvedValue(undefined);
       showtimeSeatAllMock.mockResolvedValue(seats);
 
       await expect(service.findSeats(100)).resolves.toEqual(seats);
@@ -341,20 +354,31 @@ describe('ShowtimesService', () => {
         id: 100,
       });
 
+      expect(expireStaleHoldsMock).toHaveBeenCalledWith(100);
+
+      expect(expireStaleHoldsMock).toHaveBeenCalledTimes(1);
+
       expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
         showtimeId: 100,
       });
 
       expect(showtimeSeatAllMock).toHaveBeenCalledTimes(1);
+
+      const cleanupOrder = expireStaleHoldsMock.mock.invocationCallOrder[0];
+      const inventoryReadOrder =
+        showtimeSeatWhereMock.mock.invocationCallOrder[0];
+
+      expect(cleanupOrder).toBeLessThan(inventoryReadOrder);
     });
 
-    it('should throw NotFoundException when showtime does not exist', async () => {
+    it('should throw NotFoundException without cleaning holds when showtime does not exist', async () => {
       showtimeModelMock.first.mockResolvedValue(null);
 
       await expect(service.findSeats(999)).rejects.toThrow(
         new NotFoundException('Showtime with id 999 not found'),
       );
 
+      expect(expireStaleHoldsMock).not.toHaveBeenCalled();
       expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
       expect(showtimeSeatAllMock).not.toHaveBeenCalled();
     });

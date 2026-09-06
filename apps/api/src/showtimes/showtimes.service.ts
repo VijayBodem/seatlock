@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
+import { HoldsService } from '../holds/holds.service.js';
 import { CreateShowtimeDto } from './dto/create-showtime.dto.js';
 import { UpdateShowtimeDto } from './dto/update-showtime.dto.js';
 
@@ -10,6 +11,7 @@ export class ShowtimesService {
   constructor(
     @Inject(DATABASE)
     private readonly database: typeof DatabaseClient,
+    private readonly holdsService: HoldsService,
   ) {}
 
   private async ensureScreenExists(screenId: number) {
@@ -71,11 +73,12 @@ export class ShowtimesService {
   async findSeats(id: number) {
     await this.findOne(id);
 
+    await this.holdsService.expireStaleHolds(id);
+
     return this.database.orm.public.ShowtimeSeat.where({
       showtimeId: id,
     }).all();
   }
-
   async update(id: number, updateShowtimeDto: UpdateShowtimeDto) {
     await this.findOne(id);
 

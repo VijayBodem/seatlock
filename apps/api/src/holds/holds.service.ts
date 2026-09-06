@@ -27,53 +27,15 @@ export class HoldsService {
       throw new NotFoundException(`Showtime with id ${showtimeId} not found`);
     }
 
+    await this.expireStaleHolds(showtimeId);
+
     const seatIds = [...createHoldDto.seatIds].sort(
       (left, right) => left - right,
     );
 
-    const now = Date.now();
-
-    const expiresAt = new Date(now + HOLD_DURATION_MS).toISOString();
+    const expiresAt = new Date(Date.now() + HOLD_DURATION_MS).toISOString();
 
     return this.database.transaction(async (tx) => {
-      const activeHolds = await tx.orm.public.SeatHold.where({
-        showtimeId,
-        status: 'ACTIVE',
-      }).all();
-
-      for (const activeHold of activeHolds) {
-        if (new Date(activeHold.expiresAt).getTime() > now) {
-          continue;
-        }
-
-        const expiredHold = await tx.orm.public.SeatHold.where({
-          id: activeHold.id,
-          status: 'ACTIVE',
-        }).update({
-          status: 'EXPIRED',
-        });
-
-        if (!expiredHold) {
-          continue;
-        }
-
-        const staleSeats = await tx.orm.public.ShowtimeSeat.where({
-          holdId: activeHold.id,
-          status: 'HELD',
-        }).all();
-
-        for (const staleSeat of staleSeats) {
-          await tx.orm.public.ShowtimeSeat.where({
-            id: staleSeat.id,
-            holdId: activeHold.id,
-            status: 'HELD',
-          }).update({
-            status: 'AVAILABLE',
-            holdId: null,
-          });
-        }
-      }
-
       const hold = await tx.orm.public.SeatHold.create({
         showtimeId,
         status: 'ACTIVE',
@@ -104,6 +66,50 @@ export class HoldsService {
         expiresAt: hold.expiresAt,
         seatIds,
       };
+    });
+  }
+
+  async expireStaleHolds(showtimeId: number) {
+    const now = Date.now();
+
+    await this.database.transaction(async (tx) => {
+      const activeHolds = await tx.orm.public.SeatHold.where({
+        showtimeId,
+        status: 'ACTIVE',
+      }).all();
+
+      for (const hold of activeHolds) {
+        if (new Date(hold.expiresAt).getTime() > now) {
+          continue;
+        }
+
+        const expiredHold = await tx.orm.public.SeatHold.where({
+          id: hold.id,
+          status: 'ACTIVE',
+        }).update({
+          status: 'EXPIRED',
+        });
+
+        if (!expiredHold) {
+          continue;
+        }
+
+        const heldSeats = await tx.orm.public.ShowtimeSeat.where({
+          holdId: hold.id,
+          status: 'HELD',
+        }).all();
+
+        for (const seat of heldSeats) {
+          await tx.orm.public.ShowtimeSeat.where({
+            id: seat.id,
+            holdId: hold.id,
+            status: 'HELD',
+          }).update({
+            status: 'AVAILABLE',
+            holdId: null,
+          });
+        }
+      }
     });
   }
 }

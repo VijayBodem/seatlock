@@ -63,260 +63,229 @@ describe('HoldsService', () => {
     service = new HoldsService(databaseMock as never);
   });
 
-  it('creates a hold and claims every requested seat', async () => {
-    showtimeFirstMock.mockResolvedValue({
-      id: 10,
-    });
-
-    seatHoldCreateMock.mockResolvedValue({
-      id: 50,
-      showtimeId: 10,
-      status: 'ACTIVE',
-      expiresAt: '2026-09-05T13:00:00.000Z',
-    });
-
-    showtimeSeatUpdateMock
-      .mockResolvedValueOnce({
-        id: 100,
-        showtimeId: 10,
-        seatId: 1,
-        status: 'HELD',
-        holdId: 50,
-      })
-      .mockResolvedValueOnce({
-        id: 101,
-        showtimeId: 10,
-        seatId: 2,
-        status: 'HELD',
-        holdId: 50,
+  describe('create', () => {
+    it('creates a hold and claims every requested seat', async () => {
+      showtimeFirstMock.mockResolvedValue({
+        id: 10,
       });
 
-    const result = await service.create(10, {
-      seatIds: [2, 1],
-    });
-
-    expect(showtimeFirstMock).toHaveBeenCalledWith({
-      id: 10,
-    });
-
-    expect(transactionMock).toHaveBeenCalledTimes(1);
-
-    expect(seatHoldCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        showtimeId: 10,
-        status: 'ACTIVE',
-      }),
-    );
-
-    expect(showtimeSeatWhereMock).toHaveBeenNthCalledWith(1, {
-      showtimeId: 10,
-      seatId: 1,
-      status: 'AVAILABLE',
-    });
-
-    expect(showtimeSeatWhereMock).toHaveBeenNthCalledWith(2, {
-      showtimeId: 10,
-      seatId: 2,
-      status: 'AVAILABLE',
-    });
-
-    expect(result).toEqual(
-      expect.objectContaining({
+      seatHoldCreateMock.mockResolvedValue({
         id: 50,
         showtimeId: 10,
         status: 'ACTIVE',
-        seatIds: [1, 2],
-      }),
-    );
-  });
+        expiresAt: '2026-09-05T13:00:00.000Z',
+      });
 
-  it('throws NotFoundException when showtime does not exist', async () => {
-    showtimeFirstMock.mockResolvedValue(null);
+      showtimeSeatUpdateMock
+        .mockResolvedValueOnce({
+          id: 100,
+          showtimeId: 10,
+          seatId: 1,
+          status: 'HELD',
+          holdId: 50,
+        })
+        .mockResolvedValueOnce({
+          id: 101,
+          showtimeId: 10,
+          seatId: 2,
+          status: 'HELD',
+          holdId: 50,
+        });
 
-    await expect(
-      service.create(999, {
-        seatIds: [1],
-      }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+      const result = await service.create(10, {
+        seatIds: [2, 1],
+      });
 
-    expect(transactionMock).not.toHaveBeenCalled();
-  });
+      expect(showtimeFirstMock).toHaveBeenCalledWith({
+        id: 10,
+      });
 
-  it('throws ConflictException when a requested seat cannot be claimed', async () => {
-    showtimeFirstMock.mockResolvedValue({
-      id: 10,
-    });
+      expect(transactionMock).toHaveBeenCalledTimes(2);
 
-    seatHoldCreateMock.mockResolvedValue({
-      id: 50,
-      showtimeId: 10,
-      status: 'ACTIVE',
-      expiresAt: '2026-09-05T13:00:00.000Z',
-    });
+      expect(seatHoldCreateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          showtimeId: 10,
+          status: 'ACTIVE',
+        }),
+      );
 
-    showtimeSeatUpdateMock.mockResolvedValue(null);
-
-    await expect(
-      service.create(10, {
-        seatIds: [1],
-      }),
-    ).rejects.toBeInstanceOf(ConflictException);
-  });
-
-  it('does not expire a hold whose expiration time is still in the future', async () => {
-    showtimeFirstMock.mockResolvedValue({
-      id: 10,
-    });
-
-    seatHoldAllMock.mockResolvedValue([
-      {
-        id: 40,
-        showtimeId: 10,
-        status: 'ACTIVE',
-        expiresAt: '2999-01-01T00:00:00.000Z',
-      },
-    ]);
-
-    seatHoldCreateMock.mockResolvedValue({
-      id: 50,
-      showtimeId: 10,
-      status: 'ACTIVE',
-      expiresAt: '2999-01-01T00:05:00.000Z',
-    });
-
-    showtimeSeatUpdateMock.mockResolvedValue({
-      id: 100,
-      showtimeId: 10,
-      seatId: 1,
-      status: 'HELD',
-      holdId: 50,
-    });
-
-    await service.create(10, {
-      seatIds: [1],
-    });
-
-    expect(seatHoldUpdateMock).not.toHaveBeenCalled();
-  });
-
-  it('expires a stale hold and releases its seats', async () => {
-    showtimeFirstMock.mockResolvedValue({
-      id: 10,
-    });
-
-    seatHoldAllMock.mockResolvedValue([
-      {
-        id: 40,
-        showtimeId: 10,
-        status: 'ACTIVE',
-        expiresAt: '2000-01-01T00:00:00.000Z',
-      },
-    ]);
-
-    seatHoldUpdateMock.mockResolvedValue({
-      id: 40,
-      showtimeId: 10,
-      status: 'EXPIRED',
-      expiresAt: '2000-01-01T00:00:00.000Z',
-    });
-
-    showtimeSeatAllMock.mockResolvedValue([
-      {
-        id: 90,
+      expect(showtimeSeatWhereMock).toHaveBeenNthCalledWith(1, {
         showtimeId: 10,
         seatId: 1,
-        status: 'HELD',
-        holdId: 40,
-      },
-    ]);
+        status: 'AVAILABLE',
+      });
 
-    seatHoldCreateMock.mockResolvedValue({
-      id: 50,
-      showtimeId: 10,
-      status: 'ACTIVE',
-      expiresAt: '2999-01-01T00:05:00.000Z',
+      expect(showtimeSeatWhereMock).toHaveBeenNthCalledWith(2, {
+        showtimeId: 10,
+        seatId: 2,
+        status: 'AVAILABLE',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 50,
+          showtimeId: 10,
+          status: 'ACTIVE',
+          seatIds: [1, 2],
+        }),
+      );
     });
 
-    showtimeSeatUpdateMock
-      .mockResolvedValueOnce({
+    it('throws NotFoundException when showtime does not exist', async () => {
+      showtimeFirstMock.mockResolvedValue(null);
+
+      await expect(
+        service.create(999, {
+          seatIds: [1],
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      expect(transactionMock).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictException when a requested seat cannot be claimed', async () => {
+      showtimeFirstMock.mockResolvedValue({
+        id: 10,
+      });
+
+      seatHoldCreateMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 10,
+        status: 'ACTIVE',
+        expiresAt: '2026-09-05T13:00:00.000Z',
+      });
+
+      showtimeSeatUpdateMock.mockResolvedValue(null);
+
+      await expect(
+        service.create(10, {
+          seatIds: [1],
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('expireStaleHolds', () => {
+    it('does not expire a hold whose expiration time is still in the future', async () => {
+      seatHoldAllMock.mockResolvedValue([
+        {
+          id: 40,
+          showtimeId: 10,
+          status: 'ACTIVE',
+          expiresAt: '2999-01-01T00:00:00.000Z',
+        },
+      ]);
+
+      await service.expireStaleHolds(10);
+
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
+        showtimeId: 10,
+        status: 'ACTIVE',
+      });
+
+      expect(seatHoldUpdateMock).not.toHaveBeenCalled();
+      expect(showtimeSeatAllMock).not.toHaveBeenCalled();
+      expect(showtimeSeatUpdateMock).not.toHaveBeenCalled();
+    });
+
+    it('expires a stale hold and releases its held seats', async () => {
+      seatHoldAllMock.mockResolvedValue([
+        {
+          id: 40,
+          showtimeId: 10,
+          status: 'ACTIVE',
+          expiresAt: '2000-01-01T00:00:00.000Z',
+        },
+      ]);
+
+      seatHoldUpdateMock.mockResolvedValue({
+        id: 40,
+        showtimeId: 10,
+        status: 'EXPIRED',
+        expiresAt: '2000-01-01T00:00:00.000Z',
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 90,
+          showtimeId: 10,
+          seatId: 1,
+          status: 'HELD',
+          holdId: 40,
+        },
+      ]);
+
+      showtimeSeatUpdateMock.mockResolvedValue({
         id: 90,
         showtimeId: 10,
         seatId: 1,
         status: 'AVAILABLE',
         holdId: null,
-      })
-      .mockResolvedValueOnce({
-        id: 90,
-        showtimeId: 10,
-        seatId: 1,
-        status: 'HELD',
-        holdId: 50,
       });
 
-    await service.create(10, {
-      seatIds: [1],
-    });
+      await service.expireStaleHolds(10);
 
-    expect(seatHoldUpdateMock).toHaveBeenCalledWith({
-      status: 'EXPIRED',
-    });
-
-    expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
-      holdId: 40,
-      status: 'HELD',
-    });
-
-    expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
-      id: 90,
-      holdId: 40,
-      status: 'HELD',
-    });
-
-    expect(showtimeSeatUpdateMock).toHaveBeenCalledWith({
-      status: 'AVAILABLE',
-      holdId: null,
-    });
-  });
-
-  it('does not release seats when another transaction already expired the hold', async () => {
-    showtimeFirstMock.mockResolvedValue({
-      id: 10,
-    });
-
-    seatHoldAllMock.mockResolvedValue([
-      {
-        id: 40,
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
         showtimeId: 10,
         status: 'ACTIVE',
-        expiresAt: '2000-01-01T00:00:00.000Z',
-      },
-    ]);
+      });
 
-    seatHoldUpdateMock.mockResolvedValue(null);
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
+        id: 40,
+        status: 'ACTIVE',
+      });
 
-    seatHoldCreateMock.mockResolvedValue({
-      id: 50,
-      showtimeId: 10,
-      status: 'ACTIVE',
-      expiresAt: '2999-01-01T00:05:00.000Z',
+      expect(seatHoldUpdateMock).toHaveBeenCalledWith({
+        status: 'EXPIRED',
+      });
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        holdId: 40,
+        status: 'HELD',
+      });
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        id: 90,
+        holdId: 40,
+        status: 'HELD',
+      });
+
+      expect(showtimeSeatUpdateMock).toHaveBeenCalledWith({
+        status: 'AVAILABLE',
+        holdId: null,
+      });
     });
 
-    showtimeSeatUpdateMock.mockResolvedValue({
-      id: 100,
-      showtimeId: 10,
-      seatId: 1,
-      status: 'HELD',
-      holdId: 50,
-    });
+    it('does not release seats when another transaction already expired the hold', async () => {
+      seatHoldAllMock.mockResolvedValue([
+        {
+          id: 40,
+          showtimeId: 10,
+          status: 'ACTIVE',
+          expiresAt: '2000-01-01T00:00:00.000Z',
+        },
+      ]);
 
-    await service.create(10, {
-      seatIds: [1],
-    });
+      seatHoldUpdateMock.mockResolvedValue(null);
 
-    expect(seatHoldUpdateMock).toHaveBeenCalledWith({
-      status: 'EXPIRED',
-    });
+      await service.expireStaleHolds(10);
 
-    expect(showtimeSeatAllMock).not.toHaveBeenCalled();
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
+        showtimeId: 10,
+        status: 'ACTIVE',
+      });
+
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
+        id: 40,
+        status: 'ACTIVE',
+      });
+
+      expect(seatHoldUpdateMock).toHaveBeenCalledWith({
+        status: 'EXPIRED',
+      });
+
+      expect(showtimeSeatAllMock).not.toHaveBeenCalled();
+      expect(showtimeSeatUpdateMock).not.toHaveBeenCalled();
+    });
   });
 });
