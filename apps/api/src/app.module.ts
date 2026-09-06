@@ -7,6 +7,7 @@ import { ScreensModule } from './screens/screens.module.js';
 import { SeatsModule } from './seats/seats.module.js';
 import { ShowtimesModule } from './showtimes/showtimes.module.js';
 import { HoldsModule } from './holds/holds.module.js';
+import { BookingsModule } from './bookings/bookings.module.js';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { HoldsModule } from './holds/holds.module.js';
     SeatsModule,
     ShowtimesModule,
     HoldsModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

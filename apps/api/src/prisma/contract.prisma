@@ -62,6 +62,7 @@ model Showtime {
   startsAt  TimestamptzString
   screen    Screen                     @relation(fields:[screenId], references:[id])
   screenId  Int
+  bookings Booking[]
   showtimeSeats ShowtimeSeat[]
   holds SeatHold[]
   createdAt TimestamptzString          @default(now())
@@ -77,6 +78,8 @@ model ShowtimeSeat {
   status     ShowtimeSeatStatus @default(AVAILABLE)
   hold   SeatHold? @relation(fields: [holdId], references: [id])
   holdId Int?
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  bookingId Int?
   createdAt  TimestamptzString  @default(now())
   updatedAt  temporal.updatedAtString()
 
@@ -90,6 +93,19 @@ model SeatHold {
   showtimeId Int
   status     SeatHoldStatus    @default(ACTIVE)
   expiresAt  TimestamptzString
+  seats      ShowtimeSeat[]
+  booking Booking?
+  createdAt  TimestamptzString @default(now())
+  updatedAt  temporal.updatedAtString()
+}
+
+
+model Booking {
+  id         Int               @id @default(autoincrement())
+  showtime   Showtime          @relation(fields: [showtimeId], references: [id])
+  showtimeId Int
+  hold       SeatHold          @relation(fields: [holdId], references: [id])
+  holdId     Int               @unique
   seats      ShowtimeSeat[]
   createdAt  TimestamptzString @default(now())
   updatedAt  temporal.updatedAtString()

@@ -4,6 +4,10 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "booking": {
+      "model": "Booking",
+      "namespace": "public"
+    },
     "screen": {
       "model": "Screen",
       "namespace": "public"
@@ -90,6 +94,113 @@
           }
         },
         "models": {
+          "Booking": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "holdId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "showtimeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "hold": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "holdId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "SeatHold",
+                  "namespace": "public"
+                }
+              },
+              "seats": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "bookingId"
+                  ]
+                },
+                "to": {
+                  "model": "ShowtimeSeat",
+                  "namespace": "public"
+                }
+              },
+              "showtime": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "showtimeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Showtime",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "holdId": {
+                  "column": "holdId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "showtimeId": {
+                  "column": "showtimeId"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "booking"
+            }
+          },
           "Screen": {
             "fields": {
               "createdAt": {
@@ -367,6 +478,21 @@
               }
             },
             "relations": {
+              "booking": {
+                "cardinality": "1:1",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "holdId"
+                  ]
+                },
+                "to": {
+                  "model": "Booking",
+                  "namespace": "public"
+                }
+              },
               "seats": {
                 "cardinality": "1:N",
                 "on": {
@@ -469,6 +595,21 @@
               }
             },
             "relations": {
+              "bookings": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "showtimeId"
+                  ]
+                },
+                "to": {
+                  "model": "Booking",
+                  "namespace": "public"
+                }
+              },
               "holds": {
                 "cardinality": "1:N",
                 "on": {
@@ -542,6 +683,13 @@
           },
           "ShowtimeSeat": {
             "fields": {
+              "bookingId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -599,6 +747,21 @@
               }
             },
             "relations": {
+              "booking": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "bookingId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Booking",
+                  "namespace": "public"
+                }
+              },
               "hold": {
                 "cardinality": "N:1",
                 "on": {
@@ -647,6 +810,9 @@
             },
             "storage": {
               "fields": {
+                "bookingId": {
+                  "column": "bookingId"
+                },
                 "createdAt": {
                   "column": "createdAt"
                 },
@@ -769,6 +935,99 @@
       "public": {
         "entries": {
           "table": {
+            "booking": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "holdId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "showtimeId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "showtimeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "booking"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "showtime"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "holdId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "booking"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "seatHold"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "showtimeId"
+                  ],
+                  "name": "booking_showtimeId_idx_4ae2449a",
+                  "prefix": "booking_showtimeId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "holdId"
+                  ]
+                }
+              ]
+            },
             "screen": {
               "columns": {
                 "createdAt": {
@@ -1124,6 +1383,11 @@
                 }
               ],
               "columns": {
+                "bookingId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "default": {
@@ -1226,9 +1490,33 @@
                     "namespaceId": "public",
                     "tableName": "seatHold"
                   }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "bookingId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "showtimeSeat"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "booking"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "bookingId"
+                  ],
+                  "name": "showtimeSeat_bookingId_idx_17848f4a",
+                  "prefix": "showtimeSeat_bookingId_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "holdId"
@@ -1351,12 +1639,27 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b6b1a19dc382e44b28e5b7346de463c83e6cef73463a351b6c2a3ae930270d6b"
+    "storageHash": "a054c3b36a49ecfda44d968342520580bb6429a11efbbaf3f4645622ef79d310"
   },
   "execution": {
-    "executionHash": "c59c85532f145badb4b2e91ed99b2d2e39cb437e803d84cf03c6dcb7b12e4321",
+    "executionHash": "54c1d202bd513fa77996e135a980171e47ae5576c601d8bd5e72bcad4ad618d6",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "booking"
+          }
+        },
         {
           "onCreate": {
             "id": "timestampNow",
