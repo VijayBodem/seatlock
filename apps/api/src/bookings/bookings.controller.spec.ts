@@ -4,9 +4,11 @@ import { BookingsController } from './bookings.controller.js';
 
 describe('BookingsController', () => {
   const confirmMock = jest.fn();
+  const findOneMock = jest.fn();
 
   const bookingsServiceMock = {
     confirm: confirmMock,
+    findOne: findOneMock,
   };
 
   let controller: BookingsController;
@@ -35,5 +37,25 @@ describe('BookingsController', () => {
     });
 
     expect(confirmMock).toHaveBeenCalledWith(10);
+  });
+
+  it('delegates booking retrieval to BookingsService', async () => {
+    findOneMock.mockResolvedValue({
+      id: 50,
+      showtimeId: 20,
+      holdId: 10,
+      seatIds: [1, 2],
+      createdAt: '2026-09-06T00:00:00.000Z',
+    });
+
+    await expect(controller.findOne(50)).resolves.toEqual({
+      id: 50,
+      showtimeId: 20,
+      holdId: 10,
+      seatIds: [1, 2],
+      createdAt: '2026-09-06T00:00:00.000Z',
+    });
+
+    expect(findOneMock).toHaveBeenCalledWith(50);
   });
 });

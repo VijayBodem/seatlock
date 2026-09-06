@@ -20,6 +20,7 @@ describe('BookingsService', () => {
   }));
 
   const bookingCreateMock = jest.fn();
+  const bookingFirstMock = jest.fn();
 
   const transactionClientMock = {
     orm: {
@@ -44,6 +45,16 @@ describe('BookingsService', () => {
   );
 
   const databaseMock = {
+    orm: {
+      public: {
+        Booking: {
+          first: bookingFirstMock,
+        },
+        ShowtimeSeat: {
+          where: showtimeSeatWhereMock,
+        },
+      },
+    },
     transaction: transactionMock,
   };
 
@@ -55,198 +66,279 @@ describe('BookingsService', () => {
     service = new BookingsService(databaseMock as never);
   });
 
-  it('confirms an active hold and books all held seats', async () => {
-    seatHoldFirstMock.mockResolvedValue({
-      id: 10,
-      showtimeId: 20,
-      status: 'ACTIVE',
-      expiresAt: '2999-01-01T00:00:00.000Z',
-    });
-
-    showtimeSeatAllMock.mockResolvedValue([
-      {
-        id: 100,
-        seatId: 1,
-        holdId: 10,
-        status: 'HELD',
-      },
-      {
-        id: 101,
-        seatId: 2,
-        holdId: 10,
-        status: 'HELD',
-      },
-    ]);
-
-    seatHoldUpdateMock.mockResolvedValue({
-      id: 10,
-      showtimeId: 20,
-      status: 'COMPLETED',
-    });
-
-    bookingCreateMock.mockResolvedValue({
-      id: 50,
-      showtimeId: 20,
-      holdId: 10,
-      createdAt: '2026-09-06T00:00:00.000Z',
-    });
-
-    showtimeSeatUpdateMock
-      .mockResolvedValueOnce({
-        id: 100,
-        seatId: 1,
-        status: 'BOOKED',
-        bookingId: 50,
-      })
-      .mockResolvedValueOnce({
-        id: 101,
-        seatId: 2,
-        status: 'BOOKED',
-        bookingId: 50,
+  describe('confirm', () => {
+    it('confirms an active hold and books all held seats', async () => {
+      seatHoldFirstMock.mockResolvedValue({
+        id: 10,
+        showtimeId: 20,
+        status: 'ACTIVE',
+        expiresAt: '2999-01-01T00:00:00.000Z',
       });
 
-    await expect(service.confirm(10)).resolves.toEqual({
-      id: 50,
-      showtimeId: 20,
-      holdId: 10,
-      seatIds: [1, 2],
-      createdAt: '2026-09-06T00:00:00.000Z',
-    });
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 100,
+          seatId: 1,
+          holdId: 10,
+          status: 'HELD',
+        },
+        {
+          id: 101,
+          seatId: 2,
+          holdId: 10,
+          status: 'HELD',
+        },
+      ]);
 
-    expect(transactionMock).toHaveBeenCalledTimes(1);
+      seatHoldUpdateMock.mockResolvedValue({
+        id: 10,
+        showtimeId: 20,
+        status: 'COMPLETED',
+      });
 
-    expect(seatHoldWhereMock).toHaveBeenCalledWith({
-      id: 10,
-      status: 'ACTIVE',
-    });
+      bookingCreateMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
 
-    expect(seatHoldUpdateMock).toHaveBeenCalledWith({
-      status: 'COMPLETED',
-    });
+      showtimeSeatUpdateMock
+        .mockResolvedValueOnce({
+          id: 100,
+          seatId: 1,
+          status: 'BOOKED',
+          bookingId: 50,
+        })
+        .mockResolvedValueOnce({
+          id: 101,
+          seatId: 2,
+          status: 'BOOKED',
+          bookingId: 50,
+        });
 
-    expect(bookingCreateMock).toHaveBeenCalledWith({
-      showtimeId: 20,
-      holdId: 10,
-    });
+      await expect(service.confirm(10)).resolves.toEqual({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        seatIds: [1, 2],
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
 
-    expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
-      id: 100,
-      holdId: 10,
-      status: 'HELD',
-    });
+      expect(transactionMock).toHaveBeenCalledTimes(1);
 
-    expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
-      id: 101,
-      holdId: 10,
-      status: 'HELD',
-    });
-  });
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
+        id: 10,
+        status: 'ACTIVE',
+      });
 
-  it('throws when the hold does not exist', async () => {
-    seatHoldFirstMock.mockResolvedValue(null);
+      expect(seatHoldUpdateMock).toHaveBeenCalledWith({
+        status: 'COMPLETED',
+      });
 
-    await expect(service.confirm(999)).rejects.toThrow(NotFoundException);
+      expect(bookingCreateMock).toHaveBeenCalledWith({
+        showtimeId: 20,
+        holdId: 10,
+      });
 
-    expect(bookingCreateMock).not.toHaveBeenCalled();
-  });
-
-  it('rejects an expired hold', async () => {
-    seatHoldFirstMock.mockResolvedValue({
-      id: 10,
-      showtimeId: 20,
-      status: 'ACTIVE',
-      expiresAt: '2000-01-01T00:00:00.000Z',
-    });
-
-    await expect(service.confirm(10)).rejects.toThrow(ConflictException);
-
-    expect(bookingCreateMock).not.toHaveBeenCalled();
-  });
-
-  it('rejects a hold that is not active', async () => {
-    seatHoldFirstMock.mockResolvedValue({
-      id: 10,
-      showtimeId: 20,
-      status: 'COMPLETED',
-      expiresAt: '2999-01-01T00:00:00.000Z',
-    });
-
-    await expect(service.confirm(10)).rejects.toThrow(ConflictException);
-
-    expect(bookingCreateMock).not.toHaveBeenCalled();
-  });
-
-  it('rejects a hold with no held seats', async () => {
-    seatHoldFirstMock.mockResolvedValue({
-      id: 10,
-      showtimeId: 20,
-      status: 'ACTIVE',
-      expiresAt: '2999-01-01T00:00:00.000Z',
-    });
-
-    showtimeSeatAllMock.mockResolvedValue([]);
-
-    await expect(service.confirm(10)).rejects.toThrow(ConflictException);
-
-    expect(bookingCreateMock).not.toHaveBeenCalled();
-  });
-
-  it('rejects confirmation if another request already completed the hold', async () => {
-    seatHoldFirstMock.mockResolvedValue({
-      id: 10,
-      showtimeId: 20,
-      status: 'ACTIVE',
-      expiresAt: '2999-01-01T00:00:00.000Z',
-    });
-
-    showtimeSeatAllMock.mockResolvedValue([
-      {
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
         id: 100,
-        seatId: 1,
         holdId: 10,
         status: 'HELD',
-      },
-    ]);
+      });
 
-    seatHoldUpdateMock.mockResolvedValue(null);
-
-    await expect(service.confirm(10)).rejects.toThrow(ConflictException);
-
-    expect(bookingCreateMock).not.toHaveBeenCalled();
-  });
-
-  it('rejects confirmation if a held seat cannot be transitioned to booked', async () => {
-    seatHoldFirstMock.mockResolvedValue({
-      id: 10,
-      showtimeId: 20,
-      status: 'ACTIVE',
-      expiresAt: '2999-01-01T00:00:00.000Z',
-    });
-
-    showtimeSeatAllMock.mockResolvedValue([
-      {
-        id: 100,
-        seatId: 1,
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        id: 101,
         holdId: 10,
         status: 'HELD',
-      },
-    ]);
-
-    seatHoldUpdateMock.mockResolvedValue({
-      id: 10,
-      showtimeId: 20,
-      status: 'COMPLETED',
+      });
     });
 
-    bookingCreateMock.mockResolvedValue({
-      id: 50,
-      showtimeId: 20,
-      holdId: 10,
-      createdAt: '2026-09-06T00:00:00.000Z',
+    it('throws when the hold does not exist', async () => {
+      seatHoldFirstMock.mockResolvedValue(null);
+
+      await expect(service.confirm(999)).rejects.toThrow(NotFoundException);
+
+      expect(bookingCreateMock).not.toHaveBeenCalled();
     });
 
-    showtimeSeatUpdateMock.mockResolvedValue(null);
+    it('rejects an expired hold', async () => {
+      seatHoldFirstMock.mockResolvedValue({
+        id: 10,
+        showtimeId: 20,
+        status: 'ACTIVE',
+        expiresAt: '2000-01-01T00:00:00.000Z',
+      });
 
-    await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+
+      expect(bookingCreateMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects a hold that is not active', async () => {
+      seatHoldFirstMock.mockResolvedValue({
+        id: 10,
+        showtimeId: 20,
+        status: 'COMPLETED',
+        expiresAt: '2999-01-01T00:00:00.000Z',
+      });
+
+      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+
+      expect(bookingCreateMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects a hold with no held seats', async () => {
+      seatHoldFirstMock.mockResolvedValue({
+        id: 10,
+        showtimeId: 20,
+        status: 'ACTIVE',
+        expiresAt: '2999-01-01T00:00:00.000Z',
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([]);
+
+      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+
+      expect(bookingCreateMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects confirmation if another request already completed the hold', async () => {
+      seatHoldFirstMock.mockResolvedValue({
+        id: 10,
+        showtimeId: 20,
+        status: 'ACTIVE',
+        expiresAt: '2999-01-01T00:00:00.000Z',
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 100,
+          seatId: 1,
+          holdId: 10,
+          status: 'HELD',
+        },
+      ]);
+
+      seatHoldUpdateMock.mockResolvedValue(null);
+
+      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+
+      expect(bookingCreateMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects confirmation if a held seat cannot be transitioned to booked', async () => {
+      seatHoldFirstMock.mockResolvedValue({
+        id: 10,
+        showtimeId: 20,
+        status: 'ACTIVE',
+        expiresAt: '2999-01-01T00:00:00.000Z',
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 100,
+          seatId: 1,
+          holdId: 10,
+          status: 'HELD',
+        },
+      ]);
+
+      seatHoldUpdateMock.mockResolvedValue({
+        id: 10,
+        showtimeId: 20,
+        status: 'COMPLETED',
+      });
+
+      bookingCreateMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      showtimeSeatUpdateMock.mockResolvedValue(null);
+
+      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('findOne', () => {
+    it('returns a booking with its booked seat ids', async () => {
+      bookingFirstMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 101,
+          showtimeId: 20,
+          seatId: 2,
+          status: 'BOOKED',
+          holdId: null,
+          bookingId: 50,
+        },
+        {
+          id: 100,
+          showtimeId: 20,
+          seatId: 1,
+          status: 'BOOKED',
+          holdId: null,
+          bookingId: 50,
+        },
+      ]);
+
+      await expect(service.findOne(50)).resolves.toEqual({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        seatIds: [1, 2],
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      expect(bookingFirstMock).toHaveBeenCalledWith({
+        id: 50,
+      });
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        bookingId: 50,
+        status: 'BOOKED',
+      });
+
+      expect(showtimeSeatAllMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws NotFoundException when booking does not exist', async () => {
+      bookingFirstMock.mockResolvedValue(null);
+
+      await expect(service.findOne(999)).rejects.toThrow(
+        new NotFoundException('Booking with id 999 not found'),
+      );
+
+      expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
+      expect(showtimeSeatAllMock).not.toHaveBeenCalled();
+    });
+
+    it('returns an empty seat list when the booking has no booked seat rows', async () => {
+      bookingFirstMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([]);
+
+      await expect(service.findOne(50)).resolves.toEqual({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        seatIds: [],
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+    });
   });
 });

@@ -96,4 +96,31 @@ export class BookingsService {
       };
     });
   }
+
+  async findOne(id: number) {
+    const booking = await this.database.orm.public.Booking.first({
+      id,
+    });
+
+    if (!booking) {
+      throw new NotFoundException(`Booking with id ${id} not found`);
+    }
+
+    const bookedSeats = await this.database.orm.public.ShowtimeSeat.where({
+      bookingId: id,
+      status: 'BOOKED',
+    }).all();
+
+    const seatIds = bookedSeats
+      .map((seat) => seat.seatId)
+      .sort((left, right) => left - right);
+
+    return {
+      id: booking.id,
+      showtimeId: booking.showtimeId,
+      holdId: booking.holdId,
+      seatIds,
+      createdAt: booking.createdAt,
+    };
+  }
 }
