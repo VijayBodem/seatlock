@@ -1,5 +1,15 @@
-import { Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 
+import type { AuthenticatedRequest } from '../auth/auth.types.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { BookingsService } from './bookings.service.js';
 
 @Controller()
@@ -7,8 +17,12 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post('holds/:holdId/confirm')
-  confirm(@Param('holdId', ParseIntPipe) holdId: number) {
-    return this.bookingsService.confirm(holdId);
+  @UseGuards(JwtAuthGuard)
+  confirm(
+    @Param('holdId', ParseIntPipe) holdId: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.bookingsService.confirm(holdId, request.user.id);
   }
 
   @Get('bookings/:id')

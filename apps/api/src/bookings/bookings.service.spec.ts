@@ -67,10 +67,11 @@ describe('BookingsService', () => {
   });
 
   describe('confirm', () => {
-    it('confirms an active hold and books all held seats', async () => {
+    it('confirms an owned active hold and books all held seats', async () => {
       seatHoldFirstMock.mockResolvedValue({
         id: 10,
         showtimeId: 20,
+        userId: 7,
         status: 'ACTIVE',
         expiresAt: '2999-01-01T00:00:00.000Z',
       });
@@ -93,6 +94,7 @@ describe('BookingsService', () => {
       seatHoldUpdateMock.mockResolvedValue({
         id: 10,
         showtimeId: 20,
+        userId: 7,
         status: 'COMPLETED',
       });
 
@@ -100,6 +102,7 @@ describe('BookingsService', () => {
         id: 50,
         showtimeId: 20,
         holdId: 10,
+        userId: 7,
         createdAt: '2026-09-06T00:00:00.000Z',
       });
 
@@ -117,7 +120,7 @@ describe('BookingsService', () => {
           bookingId: 50,
         });
 
-      await expect(service.confirm(10)).resolves.toEqual({
+      await expect(service.confirm(10, 7)).resolves.toEqual({
         id: 50,
         showtimeId: 20,
         holdId: 10,
@@ -127,8 +130,14 @@ describe('BookingsService', () => {
 
       expect(transactionMock).toHaveBeenCalledTimes(1);
 
+      expect(seatHoldFirstMock).toHaveBeenCalledWith({
+        id: 10,
+        userId: 7,
+      });
+
       expect(seatHoldWhereMock).toHaveBeenCalledWith({
         id: 10,
+        userId: 7,
         status: 'ACTIVE',
       });
 
@@ -139,6 +148,7 @@ describe('BookingsService', () => {
       expect(bookingCreateMock).toHaveBeenCalledWith({
         showtimeId: 20,
         holdId: 10,
+        userId: 7,
       });
 
       expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
@@ -154,23 +164,46 @@ describe('BookingsService', () => {
       });
     });
 
-    it('throws when the hold does not exist', async () => {
+    it('throws when the hold does not exist for the authenticated user', async () => {
       seatHoldFirstMock.mockResolvedValue(null);
 
-      await expect(service.confirm(999)).rejects.toThrow(NotFoundException);
+      await expect(service.confirm(999, 7)).rejects.toThrow(NotFoundException);
+
+      expect(seatHoldFirstMock).toHaveBeenCalledWith({
+        id: 999,
+        userId: 7,
+      });
 
       expect(bookingCreateMock).not.toHaveBeenCalled();
+    });
+
+    it('does not allow one user to confirm another users hold', async () => {
+      seatHoldFirstMock.mockResolvedValue(null);
+
+      await expect(service.confirm(10, 8)).rejects.toThrow(
+        new NotFoundException('Seat hold with id 10 not found'),
+      );
+
+      expect(seatHoldFirstMock).toHaveBeenCalledWith({
+        id: 10,
+        userId: 8,
+      });
+
+      expect(seatHoldWhereMock).not.toHaveBeenCalled();
+      expect(bookingCreateMock).not.toHaveBeenCalled();
+      expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
     });
 
     it('rejects an expired hold', async () => {
       seatHoldFirstMock.mockResolvedValue({
         id: 10,
         showtimeId: 20,
+        userId: 7,
         status: 'ACTIVE',
         expiresAt: '2000-01-01T00:00:00.000Z',
       });
 
-      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+      await expect(service.confirm(10, 7)).rejects.toThrow(ConflictException);
 
       expect(bookingCreateMock).not.toHaveBeenCalled();
     });
@@ -179,11 +212,12 @@ describe('BookingsService', () => {
       seatHoldFirstMock.mockResolvedValue({
         id: 10,
         showtimeId: 20,
+        userId: 7,
         status: 'COMPLETED',
         expiresAt: '2999-01-01T00:00:00.000Z',
       });
 
-      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+      await expect(service.confirm(10, 7)).rejects.toThrow(ConflictException);
 
       expect(bookingCreateMock).not.toHaveBeenCalled();
     });
@@ -192,13 +226,14 @@ describe('BookingsService', () => {
       seatHoldFirstMock.mockResolvedValue({
         id: 10,
         showtimeId: 20,
+        userId: 7,
         status: 'ACTIVE',
         expiresAt: '2999-01-01T00:00:00.000Z',
       });
 
       showtimeSeatAllMock.mockResolvedValue([]);
 
-      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+      await expect(service.confirm(10, 7)).rejects.toThrow(ConflictException);
 
       expect(bookingCreateMock).not.toHaveBeenCalled();
     });
@@ -207,6 +242,7 @@ describe('BookingsService', () => {
       seatHoldFirstMock.mockResolvedValue({
         id: 10,
         showtimeId: 20,
+        userId: 7,
         status: 'ACTIVE',
         expiresAt: '2999-01-01T00:00:00.000Z',
       });
@@ -222,7 +258,13 @@ describe('BookingsService', () => {
 
       seatHoldUpdateMock.mockResolvedValue(null);
 
-      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+      await expect(service.confirm(10, 7)).rejects.toThrow(ConflictException);
+
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
+        id: 10,
+        userId: 7,
+        status: 'ACTIVE',
+      });
 
       expect(bookingCreateMock).not.toHaveBeenCalled();
     });
@@ -231,6 +273,7 @@ describe('BookingsService', () => {
       seatHoldFirstMock.mockResolvedValue({
         id: 10,
         showtimeId: 20,
+        userId: 7,
         status: 'ACTIVE',
         expiresAt: '2999-01-01T00:00:00.000Z',
       });
@@ -247,6 +290,7 @@ describe('BookingsService', () => {
       seatHoldUpdateMock.mockResolvedValue({
         id: 10,
         showtimeId: 20,
+        userId: 7,
         status: 'COMPLETED',
       });
 
@@ -254,12 +298,19 @@ describe('BookingsService', () => {
         id: 50,
         showtimeId: 20,
         holdId: 10,
+        userId: 7,
         createdAt: '2026-09-06T00:00:00.000Z',
       });
 
       showtimeSeatUpdateMock.mockResolvedValue(null);
 
-      await expect(service.confirm(10)).rejects.toThrow(ConflictException);
+      await expect(service.confirm(10, 7)).rejects.toThrow(ConflictException);
+
+      expect(bookingCreateMock).toHaveBeenCalledWith({
+        showtimeId: 20,
+        holdId: 10,
+        userId: 7,
+      });
     });
   });
 

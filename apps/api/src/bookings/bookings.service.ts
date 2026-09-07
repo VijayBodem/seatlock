@@ -15,12 +15,13 @@ export class BookingsService {
     private readonly database: typeof DatabaseClient,
   ) {}
 
-  async confirm(holdId: number) {
+  async confirm(holdId: number, userId: number) {
     const now = Date.now();
 
     return this.database.transaction(async (tx) => {
       const hold = await tx.orm.public.SeatHold.first({
         id: holdId,
+        userId,
       });
 
       if (!hold) {
@@ -49,6 +50,7 @@ export class BookingsService {
 
       const completedHold = await tx.orm.public.SeatHold.where({
         id: holdId,
+        userId,
         status: 'ACTIVE',
       }).update({
         status: 'COMPLETED',
@@ -63,6 +65,7 @@ export class BookingsService {
       const booking = await tx.orm.public.Booking.create({
         showtimeId: hold.showtimeId,
         holdId,
+        userId,
       });
 
       const seatIds: number[] = [];

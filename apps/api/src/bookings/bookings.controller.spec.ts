@@ -19,7 +19,7 @@ describe('BookingsController', () => {
     controller = new BookingsController(bookingsServiceMock as never);
   });
 
-  it('delegates booking confirmation to BookingsService', async () => {
+  it('delegates booking confirmation with the authenticated user id', async () => {
     confirmMock.mockResolvedValue({
       id: 50,
       showtimeId: 20,
@@ -28,7 +28,14 @@ describe('BookingsController', () => {
       createdAt: '2026-09-06T00:00:00.000Z',
     });
 
-    await expect(controller.confirm(10)).resolves.toEqual({
+    const request = {
+      user: {
+        id: 7,
+        email: 'vijay@example.com',
+      },
+    };
+
+    await expect(controller.confirm(10, request as never)).resolves.toEqual({
       id: 50,
       showtimeId: 20,
       holdId: 10,
@@ -36,7 +43,7 @@ describe('BookingsController', () => {
       createdAt: '2026-09-06T00:00:00.000Z',
     });
 
-    expect(confirmMock).toHaveBeenCalledWith(10);
+    expect(confirmMock).toHaveBeenCalledWith(10, 7);
   });
 
   it('delegates booking retrieval to BookingsService', async () => {
