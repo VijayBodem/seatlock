@@ -34,4 +34,10 @@ export class UsersService {
       throw error;
     }
   }
+
+  async findByEmail(email: string) {
+    return this.database.orm.public.User.first({
+      email,
+    });
+  }
 }
