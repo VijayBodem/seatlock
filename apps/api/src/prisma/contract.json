@@ -28,6 +28,10 @@
       "model": "ShowtimeSeat",
       "namespace": "public"
     },
+    "user": {
+      "model": "User",
+      "namespace": "public"
+    },
     "venue": {
       "model": "Venue",
       "namespace": "public"
@@ -130,6 +134,13 @@
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
+              },
+              "userId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -177,6 +188,21 @@
                   "model": "Showtime",
                   "namespace": "public"
                 }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -195,6 +221,9 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
                 }
               },
               "namespaceId": "public",
@@ -475,6 +504,13 @@
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
+              },
+              "userId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -522,6 +558,21 @@
                   "model": "Showtime",
                   "namespace": "public"
                 }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -543,6 +594,9 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
                 }
               },
               "namespaceId": "public",
@@ -839,6 +893,98 @@
               "table": "showtimeSeat"
             }
           },
+          "User": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "email": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "passwordHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "bookings": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Booking",
+                  "namespace": "public"
+                }
+              },
+              "holds": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "SeatHold",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "passwordHash": {
+                  "column": "passwordHash"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "user"
+            }
+          },
           "Venue": {
             "fields": {
               "address": {
@@ -969,6 +1115,11 @@
                   "codecId": "pg/timestamptz-string@1",
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -1003,6 +1154,22 @@
                     "namespaceId": "public",
                     "tableName": "seatHold"
                   }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "booking"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
                 }
               ],
               "indexes": [
@@ -1012,6 +1179,14 @@
                   ],
                   "name": "booking_showtimeId_idx_4ae2449a",
                   "prefix": "booking_showtimeId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "booking_userId_idx_a489d58a",
+                  "prefix": "booking_userId_idx",
                   "unique": false
                 }
               ],
@@ -1261,6 +1436,11 @@
                   "codecId": "pg/timestamptz-string@1",
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -1279,6 +1459,22 @@
                     "namespaceId": "public",
                     "tableName": "showtime"
                   }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "seatHold"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
                 }
               ],
               "indexes": [
@@ -1288,6 +1484,14 @@
                   ],
                   "name": "seatHold_showtimeId_idx_4ae2449a",
                   "prefix": "seatHold_showtimeId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "seatHold_userId_idx_a489d58a",
+                  "prefix": "seatHold_userId_idx",
                   "unique": false
                 }
               ],
@@ -1556,6 +1760,57 @@
                 }
               ]
             },
+            "user": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "passwordHash": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "email"
+                  ]
+                }
+              ]
+            },
             "venue": {
               "columns": {
                 "address": {
@@ -1639,10 +1894,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "a054c3b36a49ecfda44d968342520580bb6429a11efbbaf3f4645622ef79d310"
+    "storageHash": "9daa71bd0932465d53131f5346399e09a60d68d33c42dbb87a03847e34ae87e0"
   },
   "execution": {
-    "executionHash": "54c1d202bd513fa77996e135a980171e47ae5576c601d8bd5e72bcad4ad618d6",
+    "executionHash": "96592d984fd150eae7eda0be59ef4f197dc68468681387d901a534ae0e69d8f2",
     "mutations": {
       "defaults": [
         {
@@ -1733,6 +1988,21 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "showtimeSeat"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "user"
           }
         },
         {

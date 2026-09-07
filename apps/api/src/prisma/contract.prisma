@@ -2,6 +2,7 @@
 //
 // Physical venue structure:
 // Venue -> Screen -> Seat
+
 enum SeatType {
   STANDARD
   PREMIUM
@@ -21,6 +22,16 @@ enum SeatHoldStatus {
   CANCELLED
 }
 
+model User {
+  id           Int                        @id @default(autoincrement())
+  email        String                     @unique
+  passwordHash String
+  holds        SeatHold[]
+  bookings     Booking[]
+  createdAt    TimestamptzString          @default(now())
+  updatedAt    temporal.updatedAtString()
+}
+
 model Venue {
   id        Int                        @id @default(autoincrement())
   name      String
@@ -34,7 +45,7 @@ model Venue {
 model Screen {
   id        Int                        @id @default(autoincrement())
   name      String
-  venue     Venue                      @relation(fields:[venueId], references:[id])
+  venue     Venue                      @relation(fields: [venueId], references: [id])
   venueId   Int
   seats     Seat[]
   showtimes Showtime[]
@@ -43,30 +54,30 @@ model Screen {
 }
 
 model Seat {
-  id        Int                        @id @default(autoincrement())
-  row       String
-  number    Int
-  type      SeatType                   @default(STANDARD)
-  screen    Screen                     @relation(fields:[screenId], references:[id])
-  screenId  Int
+  id            Int                        @id @default(autoincrement())
+  row           String
+  number        Int
+  type          SeatType                   @default(STANDARD)
+  screen        Screen                     @relation(fields: [screenId], references: [id])
+  screenId      Int
   showtimeSeats ShowtimeSeat[]
-  createdAt TimestamptzString          @default(now())
-  updatedAt temporal.updatedAtString()
+  createdAt     TimestamptzString          @default(now())
+  updatedAt     temporal.updatedAtString()
 
   @@unique([screenId, row, number])
 }
 
 model Showtime {
-  id        Int                        @id @default(autoincrement())
-  title     String
-  startsAt  TimestamptzString
-  screen    Screen                     @relation(fields:[screenId], references:[id])
-  screenId  Int
-  bookings Booking[]
+  id            Int                        @id @default(autoincrement())
+  title         String
+  startsAt      TimestamptzString
+  screen        Screen                     @relation(fields: [screenId], references: [id])
+  screenId      Int
+  bookings      Booking[]
   showtimeSeats ShowtimeSeat[]
-  holds SeatHold[]
-  createdAt TimestamptzString          @default(now())
-  updatedAt temporal.updatedAtString()
+  holds         SeatHold[]
+  createdAt     TimestamptzString          @default(now())
+  updatedAt     temporal.updatedAtString()
 }
 
 model ShowtimeSeat {
@@ -76,29 +87,29 @@ model ShowtimeSeat {
   seat       Seat               @relation(fields: [seatId], references: [id])
   seatId     Int
   status     ShowtimeSeatStatus @default(AVAILABLE)
-  hold   SeatHold? @relation(fields: [holdId], references: [id])
-  holdId Int?
-  booking   Booking? @relation(fields: [bookingId], references: [id])
-  bookingId Int?
+  hold       SeatHold?          @relation(fields: [holdId], references: [id])
+  holdId     Int?
+  booking    Booking?           @relation(fields: [bookingId], references: [id])
+  bookingId  Int?
   createdAt  TimestamptzString  @default(now())
   updatedAt  temporal.updatedAtString()
 
   @@unique([showtimeId, seatId])
 }
 
-
 model SeatHold {
   id         Int               @id @default(autoincrement())
   showtime   Showtime          @relation(fields: [showtimeId], references: [id])
   showtimeId Int
+  user       User?             @relation(fields: [userId], references: [id])
+  userId     Int?
   status     SeatHoldStatus    @default(ACTIVE)
   expiresAt  TimestamptzString
   seats      ShowtimeSeat[]
-  booking Booking?
+  booking    Booking?
   createdAt  TimestamptzString @default(now())
   updatedAt  temporal.updatedAtString()
 }
-
 
 model Booking {
   id         Int               @id @default(autoincrement())
@@ -106,6 +117,8 @@ model Booking {
   showtimeId Int
   hold       SeatHold          @relation(fields: [holdId], references: [id])
   holdId     Int               @unique
+  user       User?             @relation(fields: [userId], references: [id])
+  userId     Int?
   seats      ShowtimeSeat[]
   createdAt  TimestamptzString @default(now())
   updatedAt  temporal.updatedAtString()

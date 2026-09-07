@@ -1,0 +1,329 @@
+[
+  {
+    "id": "table.user",
+    "label": "Create table \"user\"",
+    "summary": "Creates table \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"user\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"user\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"user\"",
+        "sql": "CREATE TABLE \"public\".\"user\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"email\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"passwordHash\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"user\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"user\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.booking.userId",
+    "label": "Add column \"userId\" to \"booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "userId",
+        "table": "booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"userId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "booking",
+          "userId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"userId\"",
+        "sql": "ALTER TABLE \"public\".\"booking\" ADD COLUMN \"userId\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"userId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "booking",
+          "userId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.seatHold.userId",
+    "label": "Add column \"userId\" to \"seatHold\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "userId",
+        "table": "seatHold"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"userId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "seatHold",
+          "userId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"userId\"",
+        "sql": "ALTER TABLE \"public\".\"seatHold\" ADD COLUMN \"userId\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"userId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "seatHold",
+          "userId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.user.user_email_key",
+    "label": "Add unique constraint on \"user\" (email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "user_email_key",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"user_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "user_email_key",
+          "public",
+          "\"public\".\"user\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"user_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD CONSTRAINT \"user_email_key\" UNIQUE (\"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"user_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "user_email_key",
+          "public",
+          "\"public\".\"user\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.booking.booking_userId_idx_a489d58a",
+    "label": "Create index \"booking_userId_idx_a489d58a\" on \"booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "booking_userId_idx_a489d58a",
+        "table": "booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"booking_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"booking_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"booking_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"booking_userId_idx_a489d58a\" ON \"public\".\"booking\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"booking_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"booking_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.seatHold.seatHold_userId_idx_a489d58a",
+    "label": "Create index \"seatHold_userId_idx_a489d58a\" on \"seatHold\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "seatHold_userId_idx_a489d58a",
+        "table": "seatHold"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"seatHold_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seatHold_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"seatHold_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"seatHold_userId_idx_a489d58a\" ON \"public\".\"seatHold\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"seatHold_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"seatHold_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.booking.booking_userId_fkey",
+    "label": "Add foreign key \"booking_userId_fkey\" on \"booking\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "booking_userId_fkey",
+        "table": "booking"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"booking_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "booking_userId_fkey",
+          "public",
+          "\"public\".\"booking\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"booking_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"booking\"\nADD CONSTRAINT \"booking_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"booking_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "booking_userId_fkey",
+          "public",
+          "\"public\".\"booking\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.seatHold.seatHold_userId_fkey",
+    "label": "Add foreign key \"seatHold_userId_fkey\" on \"seatHold\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "seatHold_userId_fkey",
+        "table": "seatHold"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"seatHold_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "seatHold_userId_fkey",
+          "public",
+          "\"public\".\"seatHold\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"seatHold_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"seatHold\"\nADD CONSTRAINT \"seatHold_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"seatHold_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "seatHold_userId_fkey",
+          "public",
+          "\"public\".\"seatHold\""
+        ]
+      }
+    ]
+  }
+]
