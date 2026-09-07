@@ -1,16 +1,21 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { jest } from '@jest/globals';
 
-import { hashPassword } from './password.utils.js';
 import { AuthService } from './auth.service.js';
+import { hashPassword } from './password.utils.js';
 
 describe('AuthService', () => {
   const usersCreateMock = jest.fn();
   const usersFindByEmailMock = jest.fn();
+  const signAsyncMock = jest.fn();
 
   const usersServiceMock = {
     create: usersCreateMock,
     findByEmail: usersFindByEmailMock,
+  };
+
+  const jwtServiceMock = {
+    signAsync: signAsyncMock,
   };
 
   let service: AuthService;
@@ -18,7 +23,10 @@ describe('AuthService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    service = new AuthService(usersServiceMock as never);
+    service = new AuthService(
+      usersServiceMock as never,
+      jwtServiceMock as never,
+    );
   });
 
   describe('register', () => {
@@ -58,11 +66,12 @@ describe('AuthService', () => {
       );
 
       expect(result).not.toHaveProperty('passwordHash');
+      expect(signAsyncMock).not.toHaveBeenCalled();
     });
   });
 
   describe('login', () => {
-    it('logs in with valid credentials and returns only public user fields', async () => {
+    it('returns an access token for valid credentials', async () => {
       const password = 'correct horse battery staple';
       const passwordHash = await hashPassword(password);
 
@@ -74,17 +83,25 @@ describe('AuthService', () => {
         updatedAt: '2026-09-07T00:00:00.000Z',
       });
 
+      signAsyncMock.mockResolvedValue('signed-access-token');
+
       const result = await service.login({
         email: '  Vijay@Example.COM  ',
         password,
       });
 
-      expect(result).toEqual({
-        id: 1,
+      expect(usersFindByEmailMock).toHaveBeenCalledWith('vijay@example.com');
+
+      expect(signAsyncMock).toHaveBeenCalledWith({
+        sub: 1,
         email: 'vijay@example.com',
       });
 
-      expect(usersFindByEmailMock).toHaveBeenCalledWith('vijay@example.com');
+      expect(result).toEqual({
+        id: 1,
+        email: 'vijay@example.com',
+        accessToken: 'signed-access-token',
+      });
 
       expect(result).not.toHaveProperty('passwordHash');
     });
@@ -98,6 +115,8 @@ describe('AuthService', () => {
           password: 'correct horse battery staple',
         }),
       ).rejects.toThrow(new UnauthorizedException('Invalid email or password'));
+
+      expect(signAsyncMock).not.toHaveBeenCalled();
     });
 
     it('throws UnauthorizedException when the password is incorrect', async () => {
@@ -117,6 +136,8 @@ describe('AuthService', () => {
           password: 'wrong password value',
         }),
       ).rejects.toThrow(new UnauthorizedException('Invalid email or password'));
+
+      expect(signAsyncMock).not.toHaveBeenCalled();
     });
   });
 });

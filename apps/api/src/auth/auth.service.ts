@@ -1,13 +1,18 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 import { UsersService } from '../users/users.service.js';
+import type { AccessTokenPayload } from './auth.types.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import { hashPassword, verifyPassword } from './password.utils.js';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async register(dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();
@@ -41,9 +46,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    const payload: AccessTokenPayload = {
+      sub: user.id,
+      email: user.email,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
     return {
       id: user.id,
       email: user.email,
+      accessToken,
     };
   }
 }

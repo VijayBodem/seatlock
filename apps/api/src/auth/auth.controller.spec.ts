@@ -47,13 +47,29 @@ describe('AuthController', () => {
     loginMock.mockResolvedValue({
       id: 1,
       email: 'vijay@example.com',
+      accessToken: 'signed-access-token',
     });
 
     await expect(controller.login(dto)).resolves.toEqual({
       id: 1,
       email: 'vijay@example.com',
+      accessToken: 'signed-access-token',
     });
 
     expect(loginMock).toHaveBeenCalledWith(dto);
+  });
+
+  it('returns the authenticated request user', () => {
+    const request = {
+      user: {
+        id: 1,
+        email: 'vijay@example.com',
+      },
+    };
+
+    expect(controller.me(request as never)).toEqual({
+      id: 1,
+      email: 'vijay@example.com',
+    });
   });
 });
