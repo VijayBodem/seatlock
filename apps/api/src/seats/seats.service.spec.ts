@@ -141,6 +141,54 @@ describe('SeatsService', () => {
 
       expect(seatModelMock.create).not.toHaveBeenCalled();
     });
+
+    it('should map a database seat uniqueness violation to ConflictException', async () => {
+      screenModelMock.first.mockResolvedValue({
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      });
+
+      seatModelMock.first.mockResolvedValue(null);
+
+      seatModelMock.create.mockRejectedValue({
+        kind: 'sql_query',
+        sqlState: '23505',
+        constraint: 'seat_screenId_row_number_key',
+        table: 'seat',
+      });
+
+      await expect(
+        service.create(10, {
+          row: 'C',
+          number: 7,
+          type: SeatType.STANDARD,
+        }),
+      ).rejects.toThrow(
+        new ConflictException('Seat C7 already exists for screen 10'),
+      );
+    });
+
+    it('should rethrow an unrelated database error during create', async () => {
+      const databaseError = new Error('database unavailable');
+
+      screenModelMock.first.mockResolvedValue({
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      });
+
+      seatModelMock.first.mockResolvedValue(null);
+      seatModelMock.create.mockRejectedValue(databaseError);
+
+      await expect(
+        service.create(10, {
+          row: 'C',
+          number: 7,
+          type: SeatType.STANDARD,
+        }),
+      ).rejects.toBe(databaseError);
+    });
   });
 
   describe('findAllByScreen', () => {
@@ -312,6 +360,60 @@ describe('SeatsService', () => {
       );
 
       expect(seatUpdateMock).not.toHaveBeenCalled();
+    });
+
+    it('should map a database seat uniqueness violation to ConflictException', async () => {
+      const seat = {
+        id: 100,
+        row: 'A',
+        number: 1,
+        type: SeatType.STANDARD,
+        screenId: 10,
+      };
+
+      seatModelMock.first
+        .mockResolvedValueOnce(seat)
+        .mockResolvedValueOnce(null);
+
+      seatUpdateMock.mockRejectedValue({
+        kind: 'sql_query',
+        sqlState: '23505',
+        constraint: 'seat_screenId_row_number_key',
+        table: 'seat',
+      });
+
+      await expect(
+        service.update(100, {
+          row: 'B',
+          number: 2,
+        }),
+      ).rejects.toThrow(
+        new ConflictException('Seat B2 already exists for screen 10'),
+      );
+    });
+
+    it('should rethrow an unrelated database error during update', async () => {
+      const databaseError = new Error('database unavailable');
+
+      const seat = {
+        id: 100,
+        row: 'A',
+        number: 1,
+        type: SeatType.STANDARD,
+        screenId: 10,
+      };
+
+      seatModelMock.first
+        .mockResolvedValueOnce(seat)
+        .mockResolvedValueOnce(null);
+
+      seatUpdateMock.mockRejectedValue(databaseError);
+
+      await expect(
+        service.update(100, {
+          number: 2,
+        }),
+      ).rejects.toBe(databaseError);
     });
   });
 

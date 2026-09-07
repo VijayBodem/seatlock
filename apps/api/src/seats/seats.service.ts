@@ -6,9 +6,12 @@ import {
 } from '@nestjs/common';
 
 import { DATABASE } from '../database/database.constants.js';
+import { isUniqueConstraintViolation } from '../database/database-error.utils.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
 import { CreateSeatDto } from './dto/create-seat.dto.js';
 import { UpdateSeatDto } from './dto/update-seat.dto.js';
+
+const SEAT_POSITION_UNIQUE_CONSTRAINT = 'seat_screenId_row_number_key';
 
 @Injectable()
 export class SeatsService {
@@ -42,12 +45,22 @@ export class SeatsService {
       );
     }
 
-    return this.database.orm.public.Seat.create({
-      row: createSeatDto.row,
-      number: createSeatDto.number,
-      type: createSeatDto.type,
-      screenId,
-    });
+    try {
+      return await this.database.orm.public.Seat.create({
+        row: createSeatDto.row,
+        number: createSeatDto.number,
+        type: createSeatDto.type,
+        screenId,
+      });
+    } catch (error) {
+      if (isUniqueConstraintViolation(error, SEAT_POSITION_UNIQUE_CONSTRAINT)) {
+        throw new ConflictException(
+          `Seat ${createSeatDto.row}${createSeatDto.number} already exists for screen ${screenId}`,
+        );
+      }
+
+      throw error;
+    }
   }
 
   async findAllByScreen(screenId: number) {
@@ -88,7 +101,19 @@ export class SeatsService {
       );
     }
 
-    return this.database.orm.public.Seat.where({ id }).update(updateSeatDto);
+    try {
+      return await this.database.orm.public.Seat.where({ id }).update(
+        updateSeatDto,
+      );
+    } catch (error) {
+      if (isUniqueConstraintViolation(error, SEAT_POSITION_UNIQUE_CONSTRAINT)) {
+        throw new ConflictException(
+          `Seat ${row}${number} already exists for screen ${seat.screenId}`,
+        );
+      }
+
+      throw error;
+    }
   }
 
   async remove(id: number) {
