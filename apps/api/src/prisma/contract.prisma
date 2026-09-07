@@ -101,8 +101,8 @@ model SeatHold {
   id         Int               @id @default(autoincrement())
   showtime   Showtime          @relation(fields: [showtimeId], references: [id])
   showtimeId Int
-  user       User?             @relation(fields: [userId], references: [id])
-  userId     Int?
+  user       User              @relation(fields: [userId], references: [id])
+  userId     Int
   status     SeatHoldStatus    @default(ACTIVE)
   expiresAt  TimestamptzString
   seats      ShowtimeSeat[]
@@ -117,8 +117,8 @@ model Booking {
   showtimeId Int
   hold       SeatHold          @relation(fields: [holdId], references: [id])
   holdId     Int               @unique
-  user       User?             @relation(fields: [userId], references: [id])
-  userId     Int?
+  user       User              @relation(fields: [userId], references: [id])
+  userId     Int
   seats      ShowtimeSeat[]
   createdAt  TimestamptzString @default(now())
   updatedAt  temporal.updatedAtString()

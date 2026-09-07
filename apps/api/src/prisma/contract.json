@@ -136,7 +136,7 @@
                 }
               },
               "userId": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
@@ -506,7 +506,7 @@
                 }
               },
               "userId": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
@@ -1119,7 +1119,7 @@
                 "userId": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
-                  "nullable": true
+                  "nullable": false
                 }
               },
               "foreignKeys": [
@@ -1440,7 +1440,7 @@
                 "userId": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
-                  "nullable": true
+                  "nullable": false
                 }
               },
               "foreignKeys": [
@@ -1894,7 +1894,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "9daa71bd0932465d53131f5346399e09a60d68d33c42dbb87a03847e34ae87e0"
+    "storageHash": "7112442249cea7d8e057c32d457a8d9f7c55b06840a0b3abedb5018124488b3e"
   },
   "execution": {
     "executionHash": "96592d984fd150eae7eda0be59ef4f197dc68468681387d901a534ae0e69d8f2",
