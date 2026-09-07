@@ -18,7 +18,11 @@ export class HoldsService {
     private readonly database: typeof DatabaseClient,
   ) {}
 
-  async create(showtimeId: number, createHoldDto: CreateHoldDto) {
+  async create(
+    showtimeId: number,
+    createHoldDto: CreateHoldDto,
+    userId: number,
+  ) {
     const showtime = await this.database.orm.public.Showtime.first({
       id: showtimeId,
     });
@@ -38,6 +42,7 @@ export class HoldsService {
     return this.database.transaction(async (tx) => {
       const hold = await tx.orm.public.SeatHold.create({
         showtimeId,
+        userId,
         status: 'ACTIVE',
         expiresAt,
       });

@@ -64,7 +64,7 @@ describe('HoldsService', () => {
   });
 
   describe('create', () => {
-    it('creates a hold and claims every requested seat', async () => {
+    it('creates an owned hold and claims every requested seat', async () => {
       showtimeFirstMock.mockResolvedValue({
         id: 10,
       });
@@ -72,6 +72,7 @@ describe('HoldsService', () => {
       seatHoldCreateMock.mockResolvedValue({
         id: 50,
         showtimeId: 10,
+        userId: 7,
         status: 'ACTIVE',
         expiresAt: '2026-09-05T13:00:00.000Z',
       });
@@ -92,9 +93,13 @@ describe('HoldsService', () => {
           holdId: 50,
         });
 
-      const result = await service.create(10, {
-        seatIds: [2, 1],
-      });
+      const result = await service.create(
+        10,
+        {
+          seatIds: [2, 1],
+        },
+        7,
+      );
 
       expect(showtimeFirstMock).toHaveBeenCalledWith({
         id: 10,
@@ -105,6 +110,7 @@ describe('HoldsService', () => {
       expect(seatHoldCreateMock).toHaveBeenCalledWith(
         expect.objectContaining({
           showtimeId: 10,
+          userId: 7,
           status: 'ACTIVE',
         }),
       );
@@ -135,12 +141,17 @@ describe('HoldsService', () => {
       showtimeFirstMock.mockResolvedValue(null);
 
       await expect(
-        service.create(999, {
-          seatIds: [1],
-        }),
+        service.create(
+          999,
+          {
+            seatIds: [1],
+          },
+          7,
+        ),
       ).rejects.toBeInstanceOf(NotFoundException);
 
       expect(transactionMock).not.toHaveBeenCalled();
+      expect(seatHoldCreateMock).not.toHaveBeenCalled();
     });
 
     it('throws ConflictException when a requested seat cannot be claimed', async () => {
@@ -151,6 +162,7 @@ describe('HoldsService', () => {
       seatHoldCreateMock.mockResolvedValue({
         id: 50,
         showtimeId: 10,
+        userId: 7,
         status: 'ACTIVE',
         expiresAt: '2026-09-05T13:00:00.000Z',
       });
@@ -158,10 +170,20 @@ describe('HoldsService', () => {
       showtimeSeatUpdateMock.mockResolvedValue(null);
 
       await expect(
-        service.create(10, {
-          seatIds: [1],
-        }),
+        service.create(
+          10,
+          {
+            seatIds: [1],
+          },
+          7,
+        ),
       ).rejects.toBeInstanceOf(ConflictException);
+
+      expect(seatHoldCreateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 7,
+        }),
+      );
     });
   });
 
@@ -188,9 +210,7 @@ describe('HoldsService', () => {
       await service.expireStaleHolds(10);
 
       expect(seatHoldUpdateMock).not.toHaveBeenCalled();
-
       expect(showtimeSeatAllMock).not.toHaveBeenCalled();
-
       expect(showtimeSeatUpdateMock).not.toHaveBeenCalled();
     });
 
@@ -276,7 +296,6 @@ describe('HoldsService', () => {
       });
 
       expect(showtimeSeatAllMock).not.toHaveBeenCalled();
-
       expect(showtimeSeatUpdateMock).not.toHaveBeenCalled();
     });
   });
