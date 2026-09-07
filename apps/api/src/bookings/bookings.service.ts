@@ -100,6 +100,45 @@ export class BookingsService {
     });
   }
 
+  async findMine(userId: number) {
+    const bookings = await this.database.orm.public.Booking.where({
+      userId,
+    }).all();
+
+    const results = [];
+
+    for (const booking of bookings) {
+      const bookedSeats = await this.database.orm.public.ShowtimeSeat.where({
+        bookingId: booking.id,
+        status: 'BOOKED',
+      }).all();
+
+      const seatIds = bookedSeats
+        .map((seat) => seat.seatId)
+        .sort((left, right) => left - right);
+
+      results.push({
+        id: booking.id,
+        showtimeId: booking.showtimeId,
+        holdId: booking.holdId,
+        seatIds,
+        createdAt: booking.createdAt,
+      });
+    }
+
+    return results.sort((left, right) => {
+      const createdAtDifference =
+        new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime();
+
+      if (createdAtDifference !== 0) {
+        return createdAtDifference;
+      }
+
+      return right.id - left.id;
+    });
+  }
+
   async findOne(id: number, userId: number) {
     const booking = await this.database.orm.public.Booking.first({
       id,

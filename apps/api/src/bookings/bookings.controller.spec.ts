@@ -4,10 +4,12 @@ import { BookingsController } from './bookings.controller.js';
 
 describe('BookingsController', () => {
   const confirmMock = jest.fn();
+  const findMineMock = jest.fn();
   const findOneMock = jest.fn();
 
   const bookingsServiceMock = {
     confirm: confirmMock,
+    findMine: findMineMock,
     findOne: findOneMock,
   };
 
@@ -44,6 +46,37 @@ describe('BookingsController', () => {
     });
 
     expect(confirmMock).toHaveBeenCalledWith(10, 7);
+  });
+
+  it('delegates booking history retrieval with the authenticated user id', async () => {
+    findMineMock.mockResolvedValue([
+      {
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        seatIds: [1, 2],
+        createdAt: '2026-09-06T00:00:00.000Z',
+      },
+    ]);
+
+    const request = {
+      user: {
+        id: 7,
+        email: 'vijay@example.com',
+      },
+    };
+
+    await expect(controller.findMine(request as never)).resolves.toEqual([
+      {
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        seatIds: [1, 2],
+        createdAt: '2026-09-06T00:00:00.000Z',
+      },
+    ]);
+
+    expect(findMineMock).toHaveBeenCalledWith(7);
   });
 
   it('delegates booking retrieval with the authenticated user id', async () => {

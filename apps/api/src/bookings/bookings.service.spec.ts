@@ -22,6 +22,12 @@ describe('BookingsService', () => {
   const bookingCreateMock = jest.fn();
   const bookingFirstMock = jest.fn();
 
+  const bookingAllMock = jest.fn();
+
+  const bookingWhereMock = jest.fn(() => ({
+    all: bookingAllMock,
+  }));
+
   const transactionClientMock = {
     orm: {
       public: {
@@ -49,6 +55,7 @@ describe('BookingsService', () => {
       public: {
         Booking: {
           first: bookingFirstMock,
+          where: bookingWhereMock,
         },
         ShowtimeSeat: {
           where: showtimeSeatWhereMock,
@@ -414,6 +421,100 @@ describe('BookingsService', () => {
         seatIds: [],
         createdAt: '2026-09-06T00:00:00.000Z',
       });
+    });
+  });
+
+  describe('findMine', () => {
+    it('returns the authenticated users bookings newest first with sorted seat ids', async () => {
+      bookingAllMock.mockResolvedValue([
+        {
+          id: 50,
+          showtimeId: 20,
+          holdId: 10,
+          userId: 7,
+          createdAt: '2026-09-06T00:00:00.000Z',
+        },
+        {
+          id: 52,
+          showtimeId: 21,
+          holdId: 12,
+          userId: 7,
+          createdAt: '2026-09-07T00:00:00.000Z',
+        },
+      ]);
+
+      showtimeSeatAllMock
+        .mockResolvedValueOnce([
+          {
+            id: 101,
+            seatId: 2,
+            bookingId: 50,
+            status: 'BOOKED',
+          },
+          {
+            id: 100,
+            seatId: 1,
+            bookingId: 50,
+            status: 'BOOKED',
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 103,
+            seatId: 4,
+            bookingId: 52,
+            status: 'BOOKED',
+          },
+          {
+            id: 102,
+            seatId: 3,
+            bookingId: 52,
+            status: 'BOOKED',
+          },
+        ]);
+
+      await expect(service.findMine(7)).resolves.toEqual([
+        {
+          id: 52,
+          showtimeId: 21,
+          holdId: 12,
+          seatIds: [3, 4],
+          createdAt: '2026-09-07T00:00:00.000Z',
+        },
+        {
+          id: 50,
+          showtimeId: 20,
+          holdId: 10,
+          seatIds: [1, 2],
+          createdAt: '2026-09-06T00:00:00.000Z',
+        },
+      ]);
+
+      expect(bookingWhereMock).toHaveBeenCalledWith({
+        userId: 7,
+      });
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        bookingId: 50,
+        status: 'BOOKED',
+      });
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        bookingId: 52,
+        status: 'BOOKED',
+      });
+    });
+
+    it('returns an empty list when the authenticated user has no bookings', async () => {
+      bookingAllMock.mockResolvedValue([]);
+
+      await expect(service.findMine(7)).resolves.toEqual([]);
+
+      expect(bookingWhereMock).toHaveBeenCalledWith({
+        userId: 7,
+      });
+
+      expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
     });
   });
 });

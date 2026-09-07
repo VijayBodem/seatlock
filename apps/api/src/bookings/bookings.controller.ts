@@ -25,6 +25,12 @@ export class BookingsController {
     return this.bookingsService.confirm(holdId, request.user.id);
   }
 
+  @Get('bookings/me')
+  @UseGuards(JwtAuthGuard)
+  findMine(@Req() request: AuthenticatedRequest) {
+    return this.bookingsService.findMine(request.user.id);
+  }
+
   @Get('bookings/:id')
   @UseGuards(JwtAuthGuard)
   findOne(
