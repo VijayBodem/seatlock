@@ -3,6 +3,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { AuthModule } from './auth/auth.module.js';
 import { BookingsModule } from './bookings/bookings.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HoldsModule } from './holds/holds.module.js';
@@ -15,6 +16,7 @@ import { VenuesModule } from './venues/venues.module.js';
   imports: [
     ScheduleModule.forRoot(),
     DatabaseModule,
+    AuthModule,
     VenuesModule,
     ScreensModule,
     SeatsModule,
