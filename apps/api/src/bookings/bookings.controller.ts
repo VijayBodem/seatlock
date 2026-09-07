@@ -26,7 +26,11 @@ export class BookingsController {
   }
 
   @Get('bookings/:id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.bookingsService.findOne(id);
+  @UseGuards(JwtAuthGuard)
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.bookingsService.findOne(id, request.user.id);
   }
 }

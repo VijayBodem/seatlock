@@ -315,11 +315,12 @@ describe('BookingsService', () => {
   });
 
   describe('findOne', () => {
-    it('returns a booking with its booked seat ids', async () => {
+    it('returns an owned booking with its booked seat ids', async () => {
       bookingFirstMock.mockResolvedValue({
         id: 50,
         showtimeId: 20,
         holdId: 10,
+        userId: 7,
         createdAt: '2026-09-06T00:00:00.000Z',
       });
 
@@ -342,7 +343,7 @@ describe('BookingsService', () => {
         },
       ]);
 
-      await expect(service.findOne(50)).resolves.toEqual({
+      await expect(service.findOne(50, 7)).resolves.toEqual({
         id: 50,
         showtimeId: 20,
         holdId: 10,
@@ -352,6 +353,7 @@ describe('BookingsService', () => {
 
       expect(bookingFirstMock).toHaveBeenCalledWith({
         id: 50,
+        userId: 7,
       });
 
       expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
@@ -362,28 +364,50 @@ describe('BookingsService', () => {
       expect(showtimeSeatAllMock).toHaveBeenCalledTimes(1);
     });
 
-    it('throws NotFoundException when booking does not exist', async () => {
+    it('throws NotFoundException when booking does not exist for the authenticated user', async () => {
       bookingFirstMock.mockResolvedValue(null);
 
-      await expect(service.findOne(999)).rejects.toThrow(
+      await expect(service.findOne(999, 7)).rejects.toThrow(
         new NotFoundException('Booking with id 999 not found'),
       );
+
+      expect(bookingFirstMock).toHaveBeenCalledWith({
+        id: 999,
+        userId: 7,
+      });
 
       expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
       expect(showtimeSeatAllMock).not.toHaveBeenCalled();
     });
 
-    it('returns an empty seat list when the booking has no booked seat rows', async () => {
+    it('does not allow one user to retrieve another users booking', async () => {
+      bookingFirstMock.mockResolvedValue(null);
+
+      await expect(service.findOne(50, 8)).rejects.toThrow(
+        new NotFoundException('Booking with id 50 not found'),
+      );
+
+      expect(bookingFirstMock).toHaveBeenCalledWith({
+        id: 50,
+        userId: 8,
+      });
+
+      expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
+      expect(showtimeSeatAllMock).not.toHaveBeenCalled();
+    });
+
+    it('returns an empty seat list when the owned booking has no booked seat rows', async () => {
       bookingFirstMock.mockResolvedValue({
         id: 50,
         showtimeId: 20,
         holdId: 10,
+        userId: 7,
         createdAt: '2026-09-06T00:00:00.000Z',
       });
 
       showtimeSeatAllMock.mockResolvedValue([]);
 
-      await expect(service.findOne(50)).resolves.toEqual({
+      await expect(service.findOne(50, 7)).resolves.toEqual({
         id: 50,
         showtimeId: 20,
         holdId: 10,

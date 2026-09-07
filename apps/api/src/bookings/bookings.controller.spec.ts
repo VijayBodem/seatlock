@@ -46,7 +46,7 @@ describe('BookingsController', () => {
     expect(confirmMock).toHaveBeenCalledWith(10, 7);
   });
 
-  it('delegates booking retrieval to BookingsService', async () => {
+  it('delegates booking retrieval with the authenticated user id', async () => {
     findOneMock.mockResolvedValue({
       id: 50,
       showtimeId: 20,
@@ -55,7 +55,14 @@ describe('BookingsController', () => {
       createdAt: '2026-09-06T00:00:00.000Z',
     });
 
-    await expect(controller.findOne(50)).resolves.toEqual({
+    const request = {
+      user: {
+        id: 7,
+        email: 'vijay@example.com',
+      },
+    };
+
+    await expect(controller.findOne(50, request as never)).resolves.toEqual({
       id: 50,
       showtimeId: 20,
       holdId: 10,
@@ -63,6 +70,6 @@ describe('BookingsController', () => {
       createdAt: '2026-09-06T00:00:00.000Z',
     });
 
-    expect(findOneMock).toHaveBeenCalledWith(50);
+    expect(findOneMock).toHaveBeenCalledWith(50, 7);
   });
 });

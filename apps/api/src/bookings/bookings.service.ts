@@ -100,9 +100,10 @@ export class BookingsService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userId: number) {
     const booking = await this.database.orm.public.Booking.first({
       id,
+      userId,
     });
 
     if (!booking) {
