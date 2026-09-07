@@ -166,6 +166,15 @@ describe('HoldsService', () => {
   });
 
   describe('expireStaleHolds', () => {
+    it('scopes active hold cleanup to the requested showtime', async () => {
+      await service.expireStaleHolds(10);
+
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
+        showtimeId: 10,
+        status: 'ACTIVE',
+      });
+    });
+
     it('does not expire a hold whose expiration time is still in the future', async () => {
       seatHoldAllMock.mockResolvedValue([
         {
@@ -178,13 +187,10 @@ describe('HoldsService', () => {
 
       await service.expireStaleHolds(10);
 
-      expect(seatHoldWhereMock).toHaveBeenCalledWith({
-        showtimeId: 10,
-        status: 'ACTIVE',
-      });
-
       expect(seatHoldUpdateMock).not.toHaveBeenCalled();
+
       expect(showtimeSeatAllMock).not.toHaveBeenCalled();
+
       expect(showtimeSeatUpdateMock).not.toHaveBeenCalled();
     });
 
@@ -226,11 +232,6 @@ describe('HoldsService', () => {
       await service.expireStaleHolds(10);
 
       expect(seatHoldWhereMock).toHaveBeenCalledWith({
-        showtimeId: 10,
-        status: 'ACTIVE',
-      });
-
-      expect(seatHoldWhereMock).toHaveBeenCalledWith({
         id: 40,
         status: 'ACTIVE',
       });
@@ -270,22 +271,104 @@ describe('HoldsService', () => {
 
       await service.expireStaleHolds(10);
 
-      expect(seatHoldWhereMock).toHaveBeenCalledWith({
-        showtimeId: 10,
-        status: 'ACTIVE',
-      });
-
-      expect(seatHoldWhereMock).toHaveBeenCalledWith({
-        id: 40,
-        status: 'ACTIVE',
-      });
-
       expect(seatHoldUpdateMock).toHaveBeenCalledWith({
         status: 'EXPIRED',
       });
 
       expect(showtimeSeatAllMock).not.toHaveBeenCalled();
+
       expect(showtimeSeatUpdateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('expireAllStaleHolds', () => {
+    it('loads all active holds without restricting cleanup to one showtime', async () => {
+      await service.expireAllStaleHolds();
+
+      expect(seatHoldWhereMock).toHaveBeenCalledWith({
+        status: 'ACTIVE',
+      });
+
+      expect(seatHoldWhereMock).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          showtimeId: expect.any(Number),
+        }),
+      );
+    });
+
+    it('expires stale active holds across different showtimes', async () => {
+      seatHoldAllMock.mockResolvedValue([
+        {
+          id: 40,
+          showtimeId: 10,
+          status: 'ACTIVE',
+          expiresAt: '2000-01-01T00:00:00.000Z',
+        },
+        {
+          id: 41,
+          showtimeId: 20,
+          status: 'ACTIVE',
+          expiresAt: '2000-01-01T00:00:00.000Z',
+        },
+      ]);
+
+      seatHoldUpdateMock
+        .mockResolvedValueOnce({
+          id: 40,
+          showtimeId: 10,
+          status: 'EXPIRED',
+        })
+        .mockResolvedValueOnce({
+          id: 41,
+          showtimeId: 20,
+          status: 'EXPIRED',
+        });
+
+      showtimeSeatAllMock
+        .mockResolvedValueOnce([
+          {
+            id: 90,
+            seatId: 1,
+            holdId: 40,
+            status: 'HELD',
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 91,
+            seatId: 2,
+            holdId: 41,
+            status: 'HELD',
+          },
+        ]);
+
+      showtimeSeatUpdateMock
+        .mockResolvedValueOnce({
+          id: 90,
+          status: 'AVAILABLE',
+          holdId: null,
+        })
+        .mockResolvedValueOnce({
+          id: 91,
+          status: 'AVAILABLE',
+          holdId: null,
+        });
+
+      await service.expireAllStaleHolds();
+
+      expect(seatHoldUpdateMock).toHaveBeenCalledTimes(2);
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        holdId: 40,
+        status: 'HELD',
+      });
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        holdId: 41,
+        status: 'HELD',
+      });
+
+      expect(showtimeSeatUpdateMock).toHaveBeenCalledTimes(2);
     });
   });
 });

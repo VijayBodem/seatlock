@@ -70,13 +70,26 @@ export class HoldsService {
   }
 
   async expireStaleHolds(showtimeId: number) {
+    await this.expireActiveHolds(showtimeId);
+  }
+
+  async expireAllStaleHolds() {
+    await this.expireActiveHolds();
+  }
+
+  private async expireActiveHolds(showtimeId?: number) {
     const now = Date.now();
 
     await this.database.transaction(async (tx) => {
-      const activeHolds = await tx.orm.public.SeatHold.where({
-        showtimeId,
-        status: 'ACTIVE',
-      }).all();
+      const activeHolds =
+        showtimeId === undefined
+          ? await tx.orm.public.SeatHold.where({
+              status: 'ACTIVE',
+            }).all()
+          : await tx.orm.public.SeatHold.where({
+              showtimeId,
+              status: 'ACTIVE',
+            }).all();
 
       for (const hold of activeHolds) {
         if (new Date(hold.expiresAt).getTime() > now) {
