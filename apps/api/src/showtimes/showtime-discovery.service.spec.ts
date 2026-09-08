@@ -88,6 +88,98 @@ describe('ShowtimeDiscoveryService', () => {
   });
 
   describe('findAll', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-09-10T12:00:00+05:30'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+    it('should exclude showtimes that have already started', async () => {
+      showtimeAllMock.mockResolvedValue([
+        {
+          id: 99,
+          title: 'Past Show',
+          startsAt: '2026-09-10 11:59:59+05:30',
+          screenId: 10,
+        },
+        {
+          id: 100,
+          title: 'Starting Now',
+          startsAt: '2026-09-10 12:00:00+05:30',
+          screenId: 10,
+        },
+        {
+          id: 101,
+          title: 'Future Show',
+          startsAt: '2026-09-10 12:00:01+05:30',
+          screenId: 10,
+        },
+      ]);
+
+      screenAllMock.mockResolvedValue([
+        {
+          id: 10,
+          name: 'Screen 1',
+          venueId: 1,
+        },
+      ]);
+
+      venueAllMock.mockResolvedValue([
+        {
+          id: 1,
+          name: 'SeatLock Cinemas',
+          city: 'Hyderabad',
+          address: 'Madhapur',
+        },
+      ]);
+
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 1,
+          showtimeId: 99,
+          seatId: 201,
+          status: 'AVAILABLE',
+        },
+        {
+          id: 2,
+          showtimeId: 100,
+          seatId: 202,
+          status: 'AVAILABLE',
+        },
+        {
+          id: 3,
+          showtimeId: 101,
+          seatId: 203,
+          status: 'AVAILABLE',
+        },
+      ]);
+
+      expireStaleHoldsMock.mockResolvedValue(undefined);
+
+      await expect(service.findAll()).resolves.toEqual([
+        {
+          id: 101,
+          title: 'Future Show',
+          startsAt: '2026-09-10T12:00:01+05:30',
+          availableSeats: 1,
+          screen: {
+            id: 10,
+            name: 'Screen 1',
+          },
+          venue: {
+            id: 1,
+            name: 'SeatLock Cinemas',
+            city: 'Hyderabad',
+            address: 'Madhapur',
+          },
+        },
+      ]);
+
+      expect(expireStaleHoldsMock).toHaveBeenCalledTimes(1);
+      expect(expireStaleHoldsMock).toHaveBeenCalledWith(101);
+    });
     it('should return customer-friendly showtimes ordered by start time', async () => {
       showtimeAllMock.mockResolvedValue([
         {

@@ -59,7 +59,13 @@ export class ShowtimeDiscoveryService {
     const showtimes =
       (await this.database.orm.public.Showtime.all()) as ShowtimeRecord[];
 
-    for (const showtime of showtimes) {
+    const now = Date.now();
+
+    const upcomingShowtimes = showtimes.filter(
+      (showtime) => Date.parse(normalizeTimestamp(showtime.startsAt)) > now,
+    );
+
+    for (const showtime of upcomingShowtimes) {
       await this.holdsService.expireStaleHolds(showtime.id);
     }
 
@@ -88,7 +94,7 @@ export class ShowtimeDiscoveryService {
       );
     }
 
-    return showtimes
+    return upcomingShowtimes
       .map((showtime) => {
         const screen = screensById.get(showtime.screenId);
 
