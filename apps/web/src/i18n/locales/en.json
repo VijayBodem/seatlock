@@ -7,7 +7,7 @@
     "logout": "Logout",
     "restoringSession": "Restoring your session...",
     "menu": "Menu",
-"close": "Close"
+    "close": "Close"
   },
   "home": {
     "eyebrow": "Real-time seat reservation",
@@ -17,6 +17,24 @@
     "signIn": "Sign in",
     "signedInAs": "Signed in as",
     "accountReady": "Your account is ready. Showtime browsing and seat selection come next."
+  },
+  "showtimes": {
+    "eyebrow": "Now showing",
+    "title": "Find your next show",
+    "description": "Choose a showtime, check live seat availability, and continue to seat selection.",
+    "date": "Date",
+    "time": "Time",
+    "screen": "Screen",
+    "availability": "Availability",
+    "seatsAvailable_one": "{{count}} seat available",
+    "seatsAvailable_other": "{{count}} seats available",
+    "viewSeats": "View seats",
+    "loading": "Loading showtimes",
+    "errorTitle": "We couldn't load the showtimes",
+    "loadError": "Something went wrong while loading showtimes. Please try again.",
+    "retry": "Try again",
+    "emptyTitle": "No showtimes available",
+    "emptyDescription": "There are no showtimes to browse right now. Please check again later."
   },
   "auth": {
     "login": {
@@ -52,9 +70,9 @@
     "hindi": "Hindi"
   },
   "theme": {
-  "label": "Theme",
-  "system": "System",
-  "light": "Light",
-  "dark": "Dark"
-}
+    "label": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  }
 }

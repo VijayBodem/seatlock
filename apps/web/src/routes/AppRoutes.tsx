@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import { HomePage } from '../pages/HomePage'
 import { AppLayout } from '../layouts/AppLayout'
+import { HomePage } from '../pages/HomePage'
+import { ShowtimesPage } from '../pages/ShowtimesPage'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { RegisterPage } from '../pages/auth/RegisterPage'
 
@@ -10,6 +11,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="showtimes" element={<ShowtimesPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
 
