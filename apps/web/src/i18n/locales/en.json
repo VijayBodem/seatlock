@@ -1,0 +1,60 @@
+{
+  "common": {
+    "appName": "SeatLock",
+    "home": "Home",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "restoringSession": "Restoring your session...",
+    "menu": "Menu",
+"close": "Close"
+  },
+  "home": {
+    "eyebrow": "Real-time seat reservation",
+    "title": "Reserve seats without the race condition.",
+    "description": "SeatLock combines temporary seat holds, transactional booking, authenticated ownership, and real-time availability into one reservation experience.",
+    "createAccount": "Create account",
+    "signIn": "Sign in",
+    "signedInAs": "Signed in as",
+    "accountReady": "Your account is ready. Showtime browsing and seat selection come next."
+  },
+  "auth": {
+    "login": {
+      "eyebrow": "Welcome back",
+      "title": "Sign in to SeatLock",
+      "description": "Use your account to reserve seats and manage your bookings.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "newUser": "New to SeatLock?",
+      "createAccount": "Create an account",
+      "registrationSucceeded": "Account created successfully. You can sign in now.",
+      "genericError": "Unable to sign in. Please try again."
+    },
+    "register": {
+      "eyebrow": "Create your account",
+      "title": "Join SeatLock",
+      "description": "Register before reserving seats and confirming bookings.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "existingUser": "Already registered?",
+      "signIn": "Sign in",
+      "genericError": "Unable to create your account. Please try again."
+    }
+  },
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "telugu": "Telugu",
+    "hindi": "Hindi"
+  },
+  "theme": {
+  "label": "Theme",
+  "system": "System",
+  "light": "Light",
+  "dark": "Dark"
+}
+}
