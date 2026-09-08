@@ -36,6 +36,24 @@
     "emptyTitle": "No showtimes available",
     "emptyDescription": "There are no showtimes to browse right now. Please check again later."
   },
+  "showtimeSeats": {
+  "backToShowtimes": "Back to showtimes",
+  "date": "Date",
+  "time": "Time",
+  "screen": "Screen",
+  "available": "Available",
+  "screenDirection": "All seats face this screen",
+  "loading": "Loading seat map",
+  "errorTitle": "We couldn't load this showtime",
+  "loadError": "The showtime or its seat inventory could not be loaded. Please try again.",
+  "retry": "Try again",
+  "empty": "No seats are configured for this showtime.",
+  "status": {
+    "available": "Available",
+    "held": "Temporarily held",
+    "booked": "Booked"
+  }
+},
   "auth": {
     "login": {
       "eyebrow": "Welcome back",

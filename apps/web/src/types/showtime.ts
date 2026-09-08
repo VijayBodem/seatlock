@@ -18,3 +18,16 @@ export type ShowtimeSummary = {
   screen: ShowtimeScreen
   venue: ShowtimeVenue
 }
+
+export type SeatStatus = 'AVAILABLE' | 'HELD' | 'BOOKED'
+
+export type SeatType = 'STANDARD' | 'PREMIUM' | 'ACCESSIBLE'
+
+export type ShowtimeSeat = {
+  id: number
+  seatId: number
+  row: string
+  number: number
+  type: SeatType
+  status: SeatStatus
+}
