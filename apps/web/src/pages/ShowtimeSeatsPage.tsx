@@ -72,23 +72,37 @@ function formatRemainingTime(milliseconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+function getAvailableSeatTypeClasses(
+  type: ShowtimeSeat['type'],
+): string {
+  if (type === 'PREMIUM') {
+    return 'border-violet-400 bg-violet-50 text-violet-950 hover:border-blue-500 hover:bg-blue-50 dark:border-violet-700 dark:bg-violet-950/50 dark:text-violet-200 dark:hover:border-blue-500 dark:hover:bg-blue-950/40'
+  }
+
+  if (type === 'ACCESSIBLE') {
+    return 'border-cyan-400 bg-cyan-50 text-cyan-950 hover:border-blue-500 hover:bg-blue-50 dark:border-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-200 dark:hover:border-blue-500 dark:hover:bg-blue-950/40'
+  }
+
+  return 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:border-blue-500 hover:bg-blue-50 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:border-blue-500 dark:hover:bg-blue-950/40'
+}
+
 function getSeatClasses(
-  status: ShowtimeSeat['status'],
+  seat: ShowtimeSeat,
   isSelected: boolean,
 ): string {
   if (isSelected) {
     return 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/20'
   }
 
-  if (status === 'AVAILABLE') {
-    return 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:border-blue-500 hover:bg-blue-50 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:border-blue-500 dark:hover:bg-blue-950/40'
-  }
-
-  if (status === 'HELD') {
+  if (seat.status === 'HELD') {
     return 'cursor-not-allowed border-amber-300 bg-amber-50 text-amber-900 opacity-70 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200'
   }
 
-  return 'cursor-not-allowed border-zinc-300 bg-zinc-200 text-zinc-500 opacity-70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500'
+  if (seat.status === 'BOOKED') {
+    return 'cursor-not-allowed border-zinc-300 bg-zinc-200 text-zinc-500 opacity-70 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500'
+  }
+
+  return getAvailableSeatTypeClasses(seat.type)
 }
 
 function Seat({
@@ -114,19 +128,35 @@ function Seat({
         `showtimeSeats.status.${seat.status.toLowerCase()}`,
       )
 
+  const typeLabel = t(
+    `showtimeSeats.type.${seat.type.toLowerCase()}`,
+  )
+
   return (
     <button
+      aria-label={`${seat.row}${seat.number}, ${typeLabel}, ${statusLabel}`}
       aria-pressed={isSelected}
-      className={`flex size-11 shrink-0 items-center justify-center rounded-lg border text-xs font-black transition ${getSeatClasses(
-        seat.status,
+      className={`relative flex size-11 shrink-0 items-center justify-center rounded-lg border text-xs font-black transition ${getSeatClasses(
+        seat,
         isSelected,
       )}`}
       disabled={!isAvailable}
       onClick={() => onToggle(seat)}
-      title={`${seat.row}${seat.number} — ${statusLabel}`}
+      title={`${seat.row}${seat.number} — ${typeLabel} — ${statusLabel}`}
       type="button"
     >
       {seat.number}
+
+      {seat.type === 'ACCESSIBLE' &&
+        seat.status === 'AVAILABLE' &&
+        !isSelected && (
+          <span
+            aria-hidden="true"
+            className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full border border-cyan-500 bg-white text-[8px] font-black text-cyan-800 shadow-sm dark:bg-zinc-950 dark:text-cyan-200"
+          >
+            A
+          </span>
+        )}
     </button>
   )
 }
@@ -828,41 +858,92 @@ export function ShowtimeSeatsPage() {
                       </p>
                     )}
 
-                    <div className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-3 border-t border-zinc-200 pt-6 text-sm dark:border-zinc-800">
-                      <div className="flex items-center gap-2">
-                        <span className="size-4 rounded border border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50" />
-                        <span className="text-zinc-600 dark:text-zinc-400">
+                    <div className="mt-10 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+                      <div>
+                        <p className="text-center text-xs font-extrabold tracking-[0.14em] text-zinc-500 uppercase">
                           {t(
-                            'showtimeSeats.status.available',
+                            'showtimeSeats.legend.seatTypes',
                           )}
-                        </span>
+                        </p>
+
+                        <div className="mt-3 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="size-4 rounded border border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50" />
+                            <span className="text-zinc-600 dark:text-zinc-400">
+                              {t(
+                                'showtimeSeats.type.standard',
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="size-4 rounded border border-violet-400 bg-violet-50 dark:border-violet-700 dark:bg-violet-950/50" />
+                            <span className="text-zinc-600 dark:text-zinc-400">
+                              {t(
+                                'showtimeSeats.type.premium',
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="relative size-4 rounded border border-cyan-400 bg-cyan-50 dark:border-cyan-700 dark:bg-cyan-950/50">
+                              <span className="absolute -top-1.5 -right-1.5 flex size-3 items-center justify-center rounded-full bg-cyan-600 text-[7px] font-black text-white">
+                                A
+                              </span>
+                            </span>
+                            <span className="text-zinc-600 dark:text-zinc-400">
+                              {t(
+                                'showtimeSeats.type.accessible',
+                              )}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="size-4 rounded border border-blue-600 bg-blue-600" />
-                        <span className="text-zinc-600 dark:text-zinc-400">
+                      <div className="mt-6">
+                        <p className="text-center text-xs font-extrabold tracking-[0.14em] text-zinc-500 uppercase">
                           {t(
-                            'showtimeSeats.status.selected',
+                            'showtimeSeats.legend.seatStatus',
                           )}
-                        </span>
-                      </div>
+                        </p>
 
-                      <div className="flex items-center gap-2">
-                        <span className="size-4 rounded border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/50" />
-                        <span className="text-zinc-600 dark:text-zinc-400">
-                          {t(
-                            'showtimeSeats.status.held',
-                          )}
-                        </span>
-                      </div>
+                        <div className="mt-3 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="size-4 rounded border border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50" />
+                            <span className="text-zinc-600 dark:text-zinc-400">
+                              {t(
+                                'showtimeSeats.status.available',
+                              )}
+                            </span>
+                          </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="size-4 rounded border border-zinc-300 bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800" />
-                        <span className="text-zinc-600 dark:text-zinc-400">
-                          {t(
-                            'showtimeSeats.status.booked',
-                          )}
-                        </span>
+                          <div className="flex items-center gap-2">
+                            <span className="size-4 rounded border border-blue-600 bg-blue-600" />
+                            <span className="text-zinc-600 dark:text-zinc-400">
+                              {t(
+                                'showtimeSeats.status.selected',
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="size-4 rounded border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/50" />
+                            <span className="text-zinc-600 dark:text-zinc-400">
+                              {t(
+                                'showtimeSeats.status.held',
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="size-4 rounded border border-zinc-300 bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800" />
+                            <span className="text-zinc-600 dark:text-zinc-400">
+                              {t(
+                                'showtimeSeats.status.booked',
+                              )}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

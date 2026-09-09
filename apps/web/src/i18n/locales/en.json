@@ -55,6 +55,15 @@
       "held": "Temporarily held",
       "booked": "Booked"
     },
+    "type": {
+  "standard": "Standard",
+  "premium": "Premium",
+  "accessible": "Accessible"
+},
+"legend": {
+  "seatTypes": "Seat types",
+  "seatStatus": "Seat status"
+},
     "selection": {
       "title": "Your seats",
       "selected_one": "{{count}} seat selected",
