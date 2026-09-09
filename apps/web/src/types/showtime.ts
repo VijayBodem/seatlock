@@ -31,3 +31,15 @@ export type ShowtimeSeat = {
   type: SeatType
   status: SeatStatus
 }
+
+export type CreateHoldRequest = {
+  seatIds: number[]
+}
+
+export type SeatHold = {
+  id: number
+  showtimeId: number
+  status: 'ACTIVE' | 'EXPIRED'
+  expiresAt: string
+  seatIds: number[]
+}

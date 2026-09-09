@@ -36,7 +36,7 @@
     "emptyTitle": "No showtimes available",
     "emptyDescription": "There are no showtimes to browse right now. Please check again later."
   },
-  "showtimeSeats": {
+ "showtimeSeats": {
   "backToShowtimes": "Back to showtimes",
   "date": "Date",
   "time": "Time",
@@ -50,8 +50,26 @@
   "empty": "No seats are configured for this showtime.",
   "status": {
     "available": "Available",
+    "selected": "Selected",
     "held": "Temporarily held",
     "booked": "Booked"
+  },
+  "selection": {
+    "title": "Your seats",
+    "selected_one": "{{count}} seat selected",
+    "selected_other": "{{count}} seats selected",
+    "empty": "Select one or more available seats to continue."
+  },
+  "hold": {
+    "create": "Hold selected seats",
+    "creating": "Holding seats...",
+    "active": "Seats temporarily held",
+    "expiresDescription": "Complete your booking before this hold expires.",
+    "signInRequired": "Sign in before creating a temporary seat hold.",
+    "signIn": "Sign in to continue",
+    "conflict": "One or more selected seats are no longer available. Refresh the seat map and choose again.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "genericError": "We couldn't hold the selected seats. Please try again."
   }
 },
   "auth": {
