@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppLayout } from '../layouts/AppLayout'
+import { BookingsPage } from '../pages/BookingsPage'
 import { HomePage } from '../pages/HomePage'
 import { ShowtimeSeatsPage } from '../pages/ShowtimeSeatsPage'
 import { ShowtimesPage } from '../pages/ShowtimesPage'
@@ -14,6 +15,7 @@ export function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="showtimes" element={<ShowtimesPage />} />
         <Route path="showtimes/:id" element={<ShowtimeSeatsPage />} />
+        <Route path="bookings" element={<BookingsPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
 

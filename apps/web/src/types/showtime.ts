@@ -51,3 +51,22 @@ export type Booking = {
   seatIds: number[]
   createdAt: string
 }
+
+export type BookingSeat = {
+  seatId: number
+  row: string
+  number: number
+  type: SeatType
+}
+
+export type BookingShowtime = {
+  title: string
+  startsAt: string
+  screen: ShowtimeScreen
+  venue: ShowtimeVenue
+}
+
+export type BookingDetails = Booking & {
+  showtime: BookingShowtime
+  seats: BookingSeat[]
+}

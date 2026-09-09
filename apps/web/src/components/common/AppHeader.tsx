@@ -68,6 +68,15 @@ export function AppHeader() {
               {t('common.home')}
             </NavLink>
 
+            {!isRestoring && isAuthenticated && (
+              <NavLink
+                className={({ isActive }) => getNavLinkClass(isActive)}
+                to="/bookings"
+              >
+                {t('common.myBookings')}
+              </NavLink>
+            )}
+
             <label className="sr-only" htmlFor="language-selector">
               {t('language.label')}
             </label>
@@ -160,6 +169,18 @@ export function AppHeader() {
             >
               {t('common.home')}
             </NavLink>
+
+            {!isRestoring && isAuthenticated && (
+              <NavLink
+                className={({ isActive }) =>
+                  `${getNavLinkClass(isActive)} block`
+                }
+                to="/bookings"
+                onClick={closeMobileMenu}
+              >
+                {t('common.myBookings')}
+              </NavLink>
+            )}
 
             <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
               <label className="block">
