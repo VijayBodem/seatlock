@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useCallback
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -10,6 +11,7 @@ import {
 } from 'react-router-dom'
 
 import { useAuth } from '../hooks/useAuth'
+import { useShowtimeRealtime } from '../hooks/useShowtimeRealtime'
 import { ApiError } from '../services/api'
 import { confirmBooking } from '../services/booking.service'
 import { createHold } from '../services/hold.service'
@@ -23,6 +25,7 @@ import type {
   ShowtimeSeat,
   ShowtimeSummary,
 } from '../types/showtime'
+import type { SeatStatusChangedEvent } from '../services/realtime.service'
 
 function getLocale(language: string): string {
   if (language.startsWith('te')) {
@@ -216,6 +219,61 @@ export function ShowtimeSeatsPage() {
   const [reloadKey, setReloadKey] =
     useState(0)
 
+
+      const handleRealtimeSeatStatusChanged =
+    useCallback(
+      (event: SeatStatusChangedEvent) => {
+        const changedSeatIds =
+          new Set(event.seatIds)
+
+        setSeats((currentSeats) =>
+          currentSeats.map((seat) => {
+            if (
+              !changedSeatIds.has(
+                seat.seatId,
+              )
+            ) {
+              return seat
+            }
+
+            if (
+              seat.status ===
+              event.status
+            ) {
+              return seat
+            }
+
+            return {
+              ...seat,
+              status: event.status,
+            }
+          }),
+        )
+
+        if (
+          event.status !== 'AVAILABLE'
+        ) {
+          setSelectedSeatIds(
+            (currentSeatIds) =>
+              currentSeatIds.filter(
+                (seatId) =>
+                  !changedSeatIds.has(
+                    seatId,
+                  ),
+              ),
+          )
+        }
+      },
+      [],
+    )
+
+  useShowtimeRealtime({
+    showtimeId,
+    isEnabled: hasValidId,
+    onSeatStatusChanged:
+      handleRealtimeSeatStatusChanged,
+  })
+
   useEffect(() => {
     if (!hasValidId) {
       return
@@ -336,6 +394,16 @@ export function ShowtimeSeatsPage() {
       ),
     [seats, selectedSeatIds],
   )
+
+    const availableSeatCount =
+    useMemo(
+      () =>
+        seats.filter(
+          (seat) =>
+            seat.status === 'AVAILABLE',
+        ).length,
+      [seats],
+    )
 
   const bookingSeats = useMemo(() => {
     if (!booking) {
@@ -492,22 +560,6 @@ export function ShowtimeSeatsPage() {
           ),
       )
 
-      setShowtime(
-        (currentShowtime) =>
-          currentShowtime
-            ? {
-                ...currentShowtime,
-                availableSeats:
-                  Math.max(
-                    0,
-                    currentShowtime.availableSeats -
-                      createdHold
-                        .seatIds
-                        .length,
-                  ),
-              }
-            : currentShowtime,
-      )
 
       setSelectedSeatIds([])
     } catch (error) {
@@ -772,7 +824,7 @@ export function ShowtimeSeatsPage() {
                       </dt>
                       <dd className="mt-1 font-bold text-zinc-950 dark:text-white">
                         {
-                          showtime.availableSeats
+                          availableSeatCount
                         }
                       </dd>
                     </div>

@@ -1,4 +1,4 @@
-const apiUrl = import.meta.env.VITE_API_URL
+export const apiUrl = import.meta.env.VITE_API_URL
 
 if (!apiUrl) {
   throw new Error('VITE_API_URL is not configured')
@@ -52,10 +52,7 @@ async function parseResponse(response: Response): Promise<unknown> {
   return text || undefined
 }
 
-export async function apiRequest<T>(
-  path: string,
-  options: ApiRequestOptions = {},
-): Promise<T> {
+export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const { accessToken, ...requestOptions } = options
 
   const headers = new Headers(requestOptions.headers)
