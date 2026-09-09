@@ -8,6 +8,58 @@ import {
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
 
+type BookingRecord = {
+  id: number;
+  showtimeId: number;
+  holdId: number;
+  userId: number;
+  createdAt: string;
+};
+
+type ShowtimeRecord = {
+  id: number;
+  title: string;
+  startsAt: string;
+  screenId: number;
+};
+
+type ScreenRecord = {
+  id: number;
+  name: string;
+  venueId: number;
+};
+
+type VenueRecord = {
+  id: number;
+  name: string;
+  city: string;
+  address: string | null;
+};
+
+type SeatRecord = {
+  id: number;
+  row: string;
+  number: number;
+  type: string;
+  screenId: number;
+};
+
+type ShowtimeSeatRecord = {
+  id: number;
+  showtimeId: number;
+  seatId: number;
+  status: string;
+  bookingId: number | null;
+};
+
+function normalizeTimestamp(value: string): string {
+  if (value.includes('T')) {
+    return value;
+  }
+
+  return value.replace(' ', 'T');
+}
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -101,29 +153,14 @@ export class BookingsService {
   }
 
   async findMine(userId: number) {
-    const bookings = await this.database.orm.public.Booking.where({
+    const bookings = (await this.database.orm.public.Booking.where({
       userId,
-    }).all();
+    }).all()) as BookingRecord[];
 
     const results = [];
 
     for (const booking of bookings) {
-      const bookedSeats = await this.database.orm.public.ShowtimeSeat.where({
-        bookingId: booking.id,
-        status: 'BOOKED',
-      }).all();
-
-      const seatIds = bookedSeats
-        .map((seat) => seat.seatId)
-        .sort((left, right) => left - right);
-
-      results.push({
-        id: booking.id,
-        showtimeId: booking.showtimeId,
-        holdId: booking.holdId,
-        seatIds,
-        createdAt: booking.createdAt,
-      });
+      results.push(await this.buildBookingReadModel(booking));
     }
 
     return results.sort((left, right) => {
@@ -140,30 +177,111 @@ export class BookingsService {
   }
 
   async findOne(id: number, userId: number) {
-    const booking = await this.database.orm.public.Booking.first({
+    const booking = (await this.database.orm.public.Booking.first({
       id,
       userId,
-    });
+    })) as BookingRecord | null;
 
     if (!booking) {
       throw new NotFoundException(`Booking with id ${id} not found`);
     }
 
-    const bookedSeats = await this.database.orm.public.ShowtimeSeat.where({
-      bookingId: id,
-      status: 'BOOKED',
-    }).all();
+    return this.buildBookingReadModel(booking);
+  }
 
-    const seatIds = bookedSeats
-      .map((seat) => seat.seatId)
-      .sort((left, right) => left - right);
+  private async buildBookingReadModel(booking: BookingRecord) {
+    const showtime = (await this.database.orm.public.Showtime.first({
+      id: booking.showtimeId,
+    })) as ShowtimeRecord | null;
+
+    if (!showtime) {
+      throw new NotFoundException(
+        `Showtime with id ${booking.showtimeId} not found`,
+      );
+    }
+
+    const screen = (await this.database.orm.public.Screen.first({
+      id: showtime.screenId,
+    })) as ScreenRecord | null;
+
+    if (!screen) {
+      throw new NotFoundException(
+        `Screen with id ${showtime.screenId} not found`,
+      );
+    }
+
+    const venue = (await this.database.orm.public.Venue.first({
+      id: screen.venueId,
+    })) as VenueRecord | null;
+
+    if (!venue) {
+      throw new NotFoundException(`Venue with id ${screen.venueId} not found`);
+    }
+
+    const bookedShowtimeSeats =
+      (await this.database.orm.public.ShowtimeSeat.where({
+        bookingId: booking.id,
+        status: 'BOOKED',
+      }).all()) as ShowtimeSeatRecord[];
+
+    const seats = (await this.database.orm.public.Seat.where({
+      screenId: showtime.screenId,
+    }).all()) as SeatRecord[];
+
+    const seatsById = new Map(seats.map((seat) => [seat.id, seat]));
+
+    const bookedSeats = bookedShowtimeSeats
+      .map((showtimeSeat) => {
+        const seat = seatsById.get(showtimeSeat.seatId);
+
+        if (!seat) {
+          throw new NotFoundException(
+            `Seat with id ${showtimeSeat.seatId} not found`,
+          );
+        }
+
+        return {
+          seatId: seat.id,
+          row: seat.row,
+          number: seat.number,
+          type: seat.type,
+        };
+      })
+      .sort((left, right) => {
+        const rowComparison = left.row.localeCompare(right.row);
+
+        if (rowComparison !== 0) {
+          return rowComparison;
+        }
+
+        return left.number - right.number;
+      });
 
     return {
       id: booking.id,
       showtimeId: booking.showtimeId,
       holdId: booking.holdId,
-      seatIds,
+      seatIds: bookedSeats
+        .map((seat) => seat.seatId)
+        .sort((left, right) => {
+          return left - right;
+        }),
       createdAt: booking.createdAt,
+      showtime: {
+        title: showtime.title,
+        startsAt: normalizeTimestamp(showtime.startsAt),
+        screen: {
+          id: screen.id,
+          name: screen.name,
+        },
+        venue: {
+          id: venue.id,
+          name: venue.name,
+          city: venue.city,
+          address: venue.address,
+        },
+      },
+      seats: bookedSeats,
     };
   }
 }

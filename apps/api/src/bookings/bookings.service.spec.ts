@@ -21,11 +21,20 @@ describe('BookingsService', () => {
 
   const bookingCreateMock = jest.fn();
   const bookingFirstMock = jest.fn();
-
   const bookingAllMock = jest.fn();
 
   const bookingWhereMock = jest.fn(() => ({
     all: bookingAllMock,
+  }));
+
+  const showtimeFirstMock = jest.fn();
+  const screenFirstMock = jest.fn();
+  const venueFirstMock = jest.fn();
+
+  const seatAllMock = jest.fn();
+
+  const seatWhereMock = jest.fn(() => ({
+    all: seatAllMock,
   }));
 
   const transactionClientMock = {
@@ -57,8 +66,20 @@ describe('BookingsService', () => {
           first: bookingFirstMock,
           where: bookingWhereMock,
         },
+        Showtime: {
+          first: showtimeFirstMock,
+        },
+        Screen: {
+          first: screenFirstMock,
+        },
+        Venue: {
+          first: venueFirstMock,
+        },
         ShowtimeSeat: {
           where: showtimeSeatWhereMock,
+        },
+        Seat: {
+          where: seatWhereMock,
         },
       },
     },
@@ -322,7 +343,7 @@ describe('BookingsService', () => {
   });
 
   describe('findOne', () => {
-    it('returns an owned booking with its booked seat ids', async () => {
+    it('returns an enriched owned booking', async () => {
       bookingFirstMock.mockResolvedValue({
         id: 50,
         showtimeId: 20,
@@ -331,13 +352,32 @@ describe('BookingsService', () => {
         createdAt: '2026-09-06T00:00:00.000Z',
       });
 
+      showtimeFirstMock.mockResolvedValue({
+        id: 20,
+        title: 'Avatar',
+        startsAt: '2026-09-09 19:30:00+05:30',
+        screenId: 30,
+      });
+
+      screenFirstMock.mockResolvedValue({
+        id: 30,
+        name: 'Screen 2',
+        venueId: 40,
+      });
+
+      venueFirstMock.mockResolvedValue({
+        id: 40,
+        name: 'Inox Hyderabad',
+        city: 'Hyderabad',
+        address: 'Banjara Hills',
+      });
+
       showtimeSeatAllMock.mockResolvedValue([
         {
           id: 101,
           showtimeId: 20,
           seatId: 2,
           status: 'BOOKED',
-          holdId: null,
           bookingId: 50,
         },
         {
@@ -345,8 +385,24 @@ describe('BookingsService', () => {
           showtimeId: 20,
           seatId: 1,
           status: 'BOOKED',
-          holdId: null,
           bookingId: 50,
+        },
+      ]);
+
+      seatAllMock.mockResolvedValue([
+        {
+          id: 1,
+          row: 'A',
+          number: 6,
+          type: 'STANDARD',
+          screenId: 30,
+        },
+        {
+          id: 2,
+          row: 'A',
+          number: 3,
+          type: 'PREMIUM',
+          screenId: 30,
         },
       ]);
 
@@ -356,6 +412,34 @@ describe('BookingsService', () => {
         holdId: 10,
         seatIds: [1, 2],
         createdAt: '2026-09-06T00:00:00.000Z',
+        showtime: {
+          title: 'Avatar',
+          startsAt: '2026-09-09T19:30:00+05:30',
+          screen: {
+            id: 30,
+            name: 'Screen 2',
+          },
+          venue: {
+            id: 40,
+            name: 'Inox Hyderabad',
+            city: 'Hyderabad',
+            address: 'Banjara Hills',
+          },
+        },
+        seats: [
+          {
+            seatId: 2,
+            row: 'A',
+            number: 3,
+            type: 'PREMIUM',
+          },
+          {
+            seatId: 1,
+            row: 'A',
+            number: 6,
+            type: 'STANDARD',
+          },
+        ],
       });
 
       expect(bookingFirstMock).toHaveBeenCalledWith({
@@ -363,12 +447,26 @@ describe('BookingsService', () => {
         userId: 7,
       });
 
+      expect(showtimeFirstMock).toHaveBeenCalledWith({
+        id: 20,
+      });
+
+      expect(screenFirstMock).toHaveBeenCalledWith({
+        id: 30,
+      });
+
+      expect(venueFirstMock).toHaveBeenCalledWith({
+        id: 40,
+      });
+
       expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
         bookingId: 50,
         status: 'BOOKED',
       });
 
-      expect(showtimeSeatAllMock).toHaveBeenCalledTimes(1);
+      expect(seatWhereMock).toHaveBeenCalledWith({
+        screenId: 30,
+      });
     });
 
     it('throws NotFoundException when booking does not exist for the authenticated user', async () => {
@@ -383,8 +481,8 @@ describe('BookingsService', () => {
         userId: 7,
       });
 
+      expect(showtimeFirstMock).not.toHaveBeenCalled();
       expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
-      expect(showtimeSeatAllMock).not.toHaveBeenCalled();
     });
 
     it('does not allow one user to retrieve another users booking', async () => {
@@ -399,11 +497,11 @@ describe('BookingsService', () => {
         userId: 8,
       });
 
+      expect(showtimeFirstMock).not.toHaveBeenCalled();
       expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
-      expect(showtimeSeatAllMock).not.toHaveBeenCalled();
     });
 
-    it('returns an empty seat list when the owned booking has no booked seat rows', async () => {
+    it('returns an empty seat list when the booking has no booked seat rows', async () => {
       bookingFirstMock.mockResolvedValue({
         id: 50,
         showtimeId: 20,
@@ -412,7 +510,28 @@ describe('BookingsService', () => {
         createdAt: '2026-09-06T00:00:00.000Z',
       });
 
+      showtimeFirstMock.mockResolvedValue({
+        id: 20,
+        title: 'Avatar',
+        startsAt: '2026-09-09T19:30:00+05:30',
+        screenId: 30,
+      });
+
+      screenFirstMock.mockResolvedValue({
+        id: 30,
+        name: 'Screen 2',
+        venueId: 40,
+      });
+
+      venueFirstMock.mockResolvedValue({
+        id: 40,
+        name: 'Inox Hyderabad',
+        city: 'Hyderabad',
+        address: null,
+      });
+
       showtimeSeatAllMock.mockResolvedValue([]);
+      seatAllMock.mockResolvedValue([]);
 
       await expect(service.findOne(50, 7)).resolves.toEqual({
         id: 50,
@@ -420,12 +539,145 @@ describe('BookingsService', () => {
         holdId: 10,
         seatIds: [],
         createdAt: '2026-09-06T00:00:00.000Z',
+        showtime: {
+          title: 'Avatar',
+          startsAt: '2026-09-09T19:30:00+05:30',
+          screen: {
+            id: 30,
+            name: 'Screen 2',
+          },
+          venue: {
+            id: 40,
+            name: 'Inox Hyderabad',
+            city: 'Hyderabad',
+            address: null,
+          },
+        },
+        seats: [],
       });
+    });
+
+    it('throws when the booking showtime cannot be found', async () => {
+      bookingFirstMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        userId: 7,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      showtimeFirstMock.mockResolvedValue(null);
+
+      await expect(service.findOne(50, 7)).rejects.toThrow(
+        new NotFoundException('Showtime with id 20 not found'),
+      );
+
+      expect(screenFirstMock).not.toHaveBeenCalled();
+    });
+
+    it('throws when the booking screen cannot be found', async () => {
+      bookingFirstMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        userId: 7,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      showtimeFirstMock.mockResolvedValue({
+        id: 20,
+        title: 'Avatar',
+        startsAt: '2026-09-09T19:30:00+05:30',
+        screenId: 30,
+      });
+
+      screenFirstMock.mockResolvedValue(null);
+
+      await expect(service.findOne(50, 7)).rejects.toThrow(
+        new NotFoundException('Screen with id 30 not found'),
+      );
+
+      expect(venueFirstMock).not.toHaveBeenCalled();
+    });
+
+    it('throws when the booking venue cannot be found', async () => {
+      bookingFirstMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        userId: 7,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      showtimeFirstMock.mockResolvedValue({
+        id: 20,
+        title: 'Avatar',
+        startsAt: '2026-09-09T19:30:00+05:30',
+        screenId: 30,
+      });
+
+      screenFirstMock.mockResolvedValue({
+        id: 30,
+        name: 'Screen 2',
+        venueId: 40,
+      });
+
+      venueFirstMock.mockResolvedValue(null);
+
+      await expect(service.findOne(50, 7)).rejects.toThrow(
+        new NotFoundException('Venue with id 40 not found'),
+      );
+    });
+
+    it('throws when booked seat metadata cannot be found', async () => {
+      bookingFirstMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        userId: 7,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      showtimeFirstMock.mockResolvedValue({
+        id: 20,
+        title: 'Avatar',
+        startsAt: '2026-09-09T19:30:00+05:30',
+        screenId: 30,
+      });
+
+      screenFirstMock.mockResolvedValue({
+        id: 30,
+        name: 'Screen 2',
+        venueId: 40,
+      });
+
+      venueFirstMock.mockResolvedValue({
+        id: 40,
+        name: 'Inox Hyderabad',
+        city: 'Hyderabad',
+        address: null,
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 100,
+          showtimeId: 20,
+          seatId: 99,
+          status: 'BOOKED',
+          bookingId: 50,
+        },
+      ]);
+
+      seatAllMock.mockResolvedValue([]);
+
+      await expect(service.findOne(50, 7)).rejects.toThrow(
+        new NotFoundException('Seat with id 99 not found'),
+      );
     });
   });
 
   describe('findMine', () => {
-    it('returns the authenticated users bookings newest first with sorted seat ids', async () => {
+    it('returns enriched bookings newest first', async () => {
       bookingAllMock.mockResolvedValue([
         {
           id: 50,
@@ -442,6 +694,46 @@ describe('BookingsService', () => {
           createdAt: '2026-09-07T00:00:00.000Z',
         },
       ]);
+
+      showtimeFirstMock
+        .mockResolvedValueOnce({
+          id: 20,
+          title: 'Avatar',
+          startsAt: '2026-09-09 19:30:00+05:30',
+          screenId: 30,
+        })
+        .mockResolvedValueOnce({
+          id: 21,
+          title: 'Interstellar',
+          startsAt: '2026-09-10 20:00:00+05:30',
+          screenId: 31,
+        });
+
+      screenFirstMock
+        .mockResolvedValueOnce({
+          id: 30,
+          name: 'Screen 2',
+          venueId: 40,
+        })
+        .mockResolvedValueOnce({
+          id: 31,
+          name: 'Screen 1',
+          venueId: 41,
+        });
+
+      venueFirstMock
+        .mockResolvedValueOnce({
+          id: 40,
+          name: 'Inox Hyderabad',
+          city: 'Hyderabad',
+          address: 'Banjara Hills',
+        })
+        .mockResolvedValueOnce({
+          id: 41,
+          name: 'PVR Hyderabad',
+          city: 'Hyderabad',
+          address: null,
+        });
 
       showtimeSeatAllMock
         .mockResolvedValueOnce([
@@ -473,6 +765,40 @@ describe('BookingsService', () => {
           },
         ]);
 
+      seatAllMock
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            row: 'A',
+            number: 6,
+            type: 'STANDARD',
+            screenId: 30,
+          },
+          {
+            id: 2,
+            row: 'A',
+            number: 3,
+            type: 'STANDARD',
+            screenId: 30,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 3,
+            row: 'B',
+            number: 2,
+            type: 'STANDARD',
+            screenId: 31,
+          },
+          {
+            id: 4,
+            row: 'B',
+            number: 1,
+            type: 'PREMIUM',
+            screenId: 31,
+          },
+        ]);
+
       await expect(service.findMine(7)).resolves.toEqual([
         {
           id: 52,
@@ -480,6 +806,34 @@ describe('BookingsService', () => {
           holdId: 12,
           seatIds: [3, 4],
           createdAt: '2026-09-07T00:00:00.000Z',
+          showtime: {
+            title: 'Interstellar',
+            startsAt: '2026-09-10T20:00:00+05:30',
+            screen: {
+              id: 31,
+              name: 'Screen 1',
+            },
+            venue: {
+              id: 41,
+              name: 'PVR Hyderabad',
+              city: 'Hyderabad',
+              address: null,
+            },
+          },
+          seats: [
+            {
+              seatId: 4,
+              row: 'B',
+              number: 1,
+              type: 'PREMIUM',
+            },
+            {
+              seatId: 3,
+              row: 'B',
+              number: 2,
+              type: 'STANDARD',
+            },
+          ],
         },
         {
           id: 50,
@@ -487,6 +841,34 @@ describe('BookingsService', () => {
           holdId: 10,
           seatIds: [1, 2],
           createdAt: '2026-09-06T00:00:00.000Z',
+          showtime: {
+            title: 'Avatar',
+            startsAt: '2026-09-09T19:30:00+05:30',
+            screen: {
+              id: 30,
+              name: 'Screen 2',
+            },
+            venue: {
+              id: 40,
+              name: 'Inox Hyderabad',
+              city: 'Hyderabad',
+              address: 'Banjara Hills',
+            },
+          },
+          seats: [
+            {
+              seatId: 2,
+              row: 'A',
+              number: 3,
+              type: 'STANDARD',
+            },
+            {
+              seatId: 1,
+              row: 'A',
+              number: 6,
+              type: 'STANDARD',
+            },
+          ],
         },
       ]);
 
@@ -494,15 +876,57 @@ describe('BookingsService', () => {
         userId: 7,
       });
 
-      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
-        bookingId: 50,
-        status: 'BOOKED',
+      expect(showtimeFirstMock).toHaveBeenCalledTimes(2);
+      expect(screenFirstMock).toHaveBeenCalledTimes(2);
+      expect(venueFirstMock).toHaveBeenCalledTimes(2);
+      expect(showtimeSeatAllMock).toHaveBeenCalledTimes(2);
+      expect(seatAllMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('uses booking id descending as a tie breaker', async () => {
+      bookingAllMock.mockResolvedValue([
+        {
+          id: 50,
+          showtimeId: 20,
+          holdId: 10,
+          userId: 7,
+          createdAt: '2026-09-06T00:00:00.000Z',
+        },
+        {
+          id: 52,
+          showtimeId: 20,
+          holdId: 12,
+          userId: 7,
+          createdAt: '2026-09-06T00:00:00.000Z',
+        },
+      ]);
+
+      showtimeFirstMock.mockResolvedValue({
+        id: 20,
+        title: 'Avatar',
+        startsAt: '2026-09-09T19:30:00+05:30',
+        screenId: 30,
       });
 
-      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
-        bookingId: 52,
-        status: 'BOOKED',
+      screenFirstMock.mockResolvedValue({
+        id: 30,
+        name: 'Screen 2',
+        venueId: 40,
       });
+
+      venueFirstMock.mockResolvedValue({
+        id: 40,
+        name: 'Inox Hyderabad',
+        city: 'Hyderabad',
+        address: null,
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([]);
+      seatAllMock.mockResolvedValue([]);
+
+      const result = await service.findMine(7);
+
+      expect(result.map((booking) => booking.id)).toEqual([52, 50]);
     });
 
     it('returns an empty list when the authenticated user has no bookings', async () => {
@@ -514,7 +938,9 @@ describe('BookingsService', () => {
         userId: 7,
       });
 
+      expect(showtimeFirstMock).not.toHaveBeenCalled();
       expect(showtimeSeatWhereMock).not.toHaveBeenCalled();
+      expect(seatWhereMock).not.toHaveBeenCalled();
     });
   });
 });
