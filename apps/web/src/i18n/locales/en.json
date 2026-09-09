@@ -65,11 +65,25 @@
     "creating": "Holding seats...",
     "active": "Seats temporarily held",
     "expiresDescription": "Complete your booking before this hold expires.",
+    "expired": "Your seat hold has expired",
+    "expiredDescription": "Refresh the seat map before selecting seats again.",
+    "refreshSeats": "Refresh seat availability",
     "signInRequired": "Sign in before creating a temporary seat hold.",
     "signIn": "Sign in to continue",
     "conflict": "One or more selected seats are no longer available. Refresh the seat map and choose again.",
     "sessionExpired": "Your session has expired. Please sign in again.",
     "genericError": "We couldn't hold the selected seats. Please try again."
+  },
+  "booking": {
+    "title": "Booking confirmation",
+    "confirm": "Confirm booking",
+    "confirming": "Confirming booking...",
+    "success": "Booking confirmed",
+    "number": "Booking #{{id}}",
+    "expired": "This seat hold can no longer be confirmed. It may have expired.",
+    "notFound": "This seat hold could not be found for your account.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "genericError": "We couldn't confirm your booking. Please try again."
   }
 },
   "auth": {

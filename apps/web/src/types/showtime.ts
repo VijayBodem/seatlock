@@ -43,3 +43,11 @@ export type SeatHold = {
   expiresAt: string
   seatIds: number[]
 }
+
+export type Booking = {
+  id: number
+  showtimeId: number
+  holdId: number
+  seatIds: number[]
+  createdAt: string
+}

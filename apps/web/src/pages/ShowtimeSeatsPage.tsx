@@ -10,13 +10,15 @@ import {
 } from 'react-router-dom'
 
 import { useAuth } from '../hooks/useAuth'
+import { ApiError } from '../services/api'
+import { confirmBooking } from '../services/booking.service'
 import { createHold } from '../services/hold.service'
 import {
   getShowtime,
   getShowtimeSeats,
 } from '../services/showtime.service'
-import { ApiError } from '../services/api'
 import type {
+  Booking,
   SeatHold,
   ShowtimeSeat,
   ShowtimeSummary,
@@ -92,19 +94,25 @@ function getSeatClasses(
 function Seat({
   seat,
   isSelected,
+  isSelectionDisabled,
   onToggle,
 }: {
   seat: ShowtimeSeat
   isSelected: boolean
+  isSelectionDisabled: boolean
   onToggle: (seat: ShowtimeSeat) => void
 }) {
   const { t } = useTranslation()
 
-  const isAvailable = seat.status === 'AVAILABLE'
+  const isAvailable =
+    seat.status === 'AVAILABLE' &&
+    !isSelectionDisabled
 
   const statusLabel = isSelected
     ? t('showtimeSeats.status.selected')
-    : t(`showtimeSeats.status.${seat.status.toLowerCase()}`)
+    : t(
+        `showtimeSeats.status.${seat.status.toLowerCase()}`,
+      )
 
   return (
     <button
@@ -126,6 +134,7 @@ function Seat({
 export function ShowtimeSeatsPage() {
   const { t, i18n } = useTranslation()
   const { id } = useParams()
+
   const {
     accessToken,
     isAuthenticated,
@@ -133,8 +142,10 @@ export function ShowtimeSeatsPage() {
   } = useAuth()
 
   const showtimeId = Number(id)
+
   const hasValidId =
-    Number.isInteger(showtimeId) && showtimeId > 0
+    Number.isInteger(showtimeId) &&
+    showtimeId > 0
 
   const [showtime, setShowtime] =
     useState<ShowtimeSummary | null>(null)
@@ -148,6 +159,9 @@ export function ShowtimeSeatsPage() {
   const [hold, setHold] =
     useState<SeatHold | null>(null)
 
+  const [booking, setBooking] =
+    useState<Booking | null>(null)
+
   const [remainingHoldMs, setRemainingHoldMs] =
     useState(0)
 
@@ -160,7 +174,13 @@ export function ShowtimeSeatsPage() {
   const [holdError, setHoldError] =
     useState<string | null>(null)
 
+  const [bookingError, setBookingError] =
+    useState<string | null>(null)
+
   const [isCreatingHold, setIsCreatingHold] =
+    useState(false)
+
+  const [isConfirmingBooking, setIsConfirmingBooking] =
     useState(false)
 
   const [reloadKey, setReloadKey] =
@@ -216,24 +236,34 @@ export function ShowtimeSeatsPage() {
   ])
 
   useEffect(() => {
-    if (!hold) {
+    if (!hold || booking) {
       return
     }
 
-    const intervalId = window.setInterval(() => {
+    const expiresAt = hold.expiresAt
+
+    function updateRemainingTime() {
       const remaining =
-        new Date(hold.expiresAt).getTime() -
+        new Date(expiresAt).getTime() -
         Date.now()
 
       setRemainingHoldMs(
         Math.max(0, remaining),
       )
-    }, 1000)
+    }
+
+    updateRemainingTime()
+
+    const intervalId =
+      window.setInterval(
+        updateRemainingTime,
+        1000,
+      )
 
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [hold])
+  }, [booking, hold])
 
   const seatsByRow = useMemo(() => {
     const rows = new Map<
@@ -246,15 +276,22 @@ export function ShowtimeSeatsPage() {
         rows.get(seat.row) ?? []
 
       rowSeats.push(seat)
-      rows.set(seat.row, rowSeats)
+
+      rows.set(
+        seat.row,
+        rowSeats,
+      )
     }
 
-    return Array.from(rows.entries()).map(
+    return Array.from(
+      rows.entries(),
+    ).map(
       ([row, rowSeats]) => ({
         row,
         seats: [...rowSeats].sort(
           (left, right) =>
-            left.number - right.number,
+            left.number -
+            right.number,
         ),
       }),
     )
@@ -270,10 +307,54 @@ export function ShowtimeSeatsPage() {
     [seats, selectedSeatIds],
   )
 
+  const bookingSeats = useMemo(() => {
+    if (!booking) {
+      return []
+    }
+
+    return seats
+      .filter((seat) =>
+        booking.seatIds.includes(
+          seat.seatId,
+        ),
+      )
+      .sort((left, right) => {
+        const rowDifference =
+          left.row.localeCompare(
+            right.row,
+          )
+
+        if (rowDifference !== 0) {
+          return rowDifference
+        }
+
+        return (
+          left.number -
+          right.number
+        )
+      })
+  }, [booking, seats])
+
+  const hasActiveHold =
+    hold !== null &&
+    booking === null &&
+    remainingHoldMs > 0
+
+  const hasExpiredHold =
+    hold !== null &&
+    booking === null &&
+    remainingHoldMs <= 0
+
+  const isSelectionDisabled =
+    hold !== null || booking !== null
+
   function handleSeatToggle(
     seat: ShowtimeSeat,
   ) {
-    if (seat.status !== 'AVAILABLE') {
+    if (
+      seat.status !== 'AVAILABLE' ||
+      isSelectionDisabled
+    ) {
       return
     }
 
@@ -288,7 +369,8 @@ export function ShowtimeSeatsPage() {
         ) {
           return currentSeatIds.filter(
             (seatId) =>
-              seatId !== seat.seatId,
+              seatId !==
+              seat.seatId,
           )
         }
 
@@ -308,6 +390,21 @@ export function ShowtimeSeatsPage() {
     setIsLoading(true)
     setHasError(false)
     setHoldError(null)
+    setBookingError(null)
+
+    setReloadKey(
+      (current) => current + 1,
+    )
+  }
+
+  function handleRefreshAfterExpiry() {
+    setHold(null)
+    setBooking(null)
+    setRemainingHoldMs(0)
+    setHoldError(null)
+    setBookingError(null)
+    setIsLoading(true)
+
     setReloadKey(
       (current) => current + 1,
     )
@@ -316,20 +413,23 @@ export function ShowtimeSeatsPage() {
   async function handleCreateHold() {
     if (
       !accessToken ||
-      selectedSeatIds.length === 0
+      selectedSeatIds.length === 0 ||
+      hold
     ) {
       return
     }
 
     setIsCreatingHold(true)
     setHoldError(null)
+    setBookingError(null)
 
     try {
       const createdHold =
         await createHold(
           showtimeId,
           {
-            seatIds: selectedSeatIds,
+            seatIds:
+              selectedSeatIds,
           },
           accessToken,
         )
@@ -341,21 +441,25 @@ export function ShowtimeSeatsPage() {
           0,
           new Date(
             createdHold.expiresAt,
-          ).getTime() - Date.now(),
+          ).getTime() -
+            Date.now(),
         ),
       )
 
-      setSeats((currentSeats) =>
-        currentSeats.map((seat) =>
-          createdHold.seatIds.includes(
-            seat.seatId,
-          )
-            ? {
-                ...seat,
-                status: 'HELD',
-              }
-            : seat,
-        ),
+      setSeats(
+        (currentSeats) =>
+          currentSeats.map(
+            (seat) =>
+              createdHold.seatIds.includes(
+                seat.seatId,
+              )
+                ? {
+                    ...seat,
+                    status:
+                      'HELD',
+                  }
+                : seat,
+          ),
       )
 
       setShowtime(
@@ -367,7 +471,9 @@ export function ShowtimeSeatsPage() {
                   Math.max(
                     0,
                     currentShowtime.availableSeats -
-                      createdHold.seatIds.length,
+                      createdHold
+                        .seatIds
+                        .length,
                   ),
               }
             : currentShowtime,
@@ -405,13 +511,91 @@ export function ShowtimeSeatsPage() {
     }
   }
 
-  const formattedShowtime = showtime
-    ? formatShowtime(
-        showtime.startsAt,
-        i18n.resolvedLanguage ??
-          i18n.language,
+  async function handleConfirmBooking() {
+    if (
+      !accessToken ||
+      !hold ||
+      remainingHoldMs <= 0 ||
+      booking
+    ) {
+      return
+    }
+
+    setIsConfirmingBooking(true)
+    setBookingError(null)
+
+    try {
+      const confirmedBooking =
+        await confirmBooking(
+          hold.id,
+          accessToken,
+        )
+
+      setBooking(confirmedBooking)
+
+      setSeats(
+        (currentSeats) =>
+          currentSeats.map(
+            (seat) =>
+              confirmedBooking.seatIds.includes(
+                seat.seatId,
+              )
+                ? {
+                    ...seat,
+                    status:
+                      'BOOKED',
+                  }
+                : seat,
+          ),
       )
-    : null
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.status === 409
+      ) {
+        setBookingError(
+          t(
+            'showtimeSeats.booking.expired',
+          ),
+        )
+      } else if (
+        error instanceof ApiError &&
+        error.status === 404
+      ) {
+        setBookingError(
+          t(
+            'showtimeSeats.booking.notFound',
+          ),
+        )
+      } else if (
+        error instanceof ApiError &&
+        error.status === 401
+      ) {
+        setBookingError(
+          t(
+            'showtimeSeats.booking.sessionExpired',
+          ),
+        )
+      } else {
+        setBookingError(
+          t(
+            'showtimeSeats.booking.genericError',
+          ),
+        )
+      }
+    } finally {
+      setIsConfirmingBooking(false)
+    }
+  }
+
+  const formattedShowtime =
+    showtime
+      ? formatShowtime(
+          showtime.startsAt,
+          i18n.resolvedLanguage ??
+            i18n.language,
+        )
+      : null
 
   return (
     <main className="min-h-[calc(100vh-72px)] bg-zinc-50 dark:bg-zinc-950">
@@ -613,6 +797,9 @@ export function ShowtimeSeatsPage() {
                                       isSelected={selectedSeatIds.includes(
                                         seat.seatId,
                                       )}
+                                      isSelectionDisabled={
+                                        isSelectionDisabled
+                                      }
                                       key={
                                         seat.id
                                       }
@@ -683,14 +870,56 @@ export function ShowtimeSeatsPage() {
 
                 <aside className="h-fit rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm xl:sticky xl:top-24 dark:border-zinc-800 dark:bg-zinc-900">
                   <h2 className="text-lg font-black text-zinc-950 dark:text-white">
-                    {t(
-                      'showtimeSeats.selection.title',
-                    )}
+                    {booking
+                      ? t(
+                          'showtimeSeats.booking.title',
+                        )
+                      : t(
+                          'showtimeSeats.selection.title',
+                        )}
                   </h2>
 
-                  {hold &&
-                  remainingHoldMs >
-                    0 ? (
+                  {booking && (
+                    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
+                      <p className="text-sm font-black text-emerald-900 dark:text-emerald-200">
+                        {t(
+                          'showtimeSeats.booking.success',
+                        )}
+                      </p>
+
+                      <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
+                        {t(
+                          'showtimeSeats.booking.number',
+                          {
+                            id:
+                              booking.id,
+                          },
+                        )}
+                      </p>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {bookingSeats.map(
+                          (seat) => (
+                            <span
+                              className="rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+                              key={
+                                seat.seatId
+                              }
+                            >
+                              {
+                                seat.row
+                              }
+                              {
+                                seat.number
+                              }
+                            </span>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasActiveHold && (
                     <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/40">
                       <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
                         {t(
@@ -710,48 +939,83 @@ export function ShowtimeSeatsPage() {
                         )}
                       </p>
                     </div>
-                  ) : null}
+                  )}
 
-                  {selectedSeats.length >
-                  0 ? (
-                    <div className="mt-5">
-                      <p className="text-sm font-bold text-zinc-500">
+                  {hasExpiredHold && (
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
+                      <p className="text-sm font-bold text-amber-900 dark:text-amber-200">
                         {t(
-                          'showtimeSeats.selection.selected',
-                          {
-                            count:
-                              selectedSeats.length,
-                          },
+                          'showtimeSeats.hold.expired',
                         )}
                       </p>
 
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {selectedSeats.map(
-                          (seat) => (
-                            <span
-                              className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-bold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
-                              key={
-                                seat.seatId
-                              }
-                            >
-                              {
-                                seat.row
-                              }
-                              {
-                                seat.number
-                              }
-                            </span>
-                          ),
+                      <p className="mt-2 text-sm leading-6 text-amber-700 dark:text-amber-300">
+                        {t(
+                          'showtimeSeats.hold.expiredDescription',
                         )}
-                      </div>
+                      </p>
+
+                      <button
+                        className="mt-4 min-h-11 w-full rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-amber-600"
+                        onClick={
+                          handleRefreshAfterExpiry
+                        }
+                        type="button"
+                      >
+                        {t(
+                          'showtimeSeats.hold.refreshSeats',
+                        )}
+                      </button>
                     </div>
-                  ) : (
-                    <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                      {t(
-                        'showtimeSeats.selection.empty',
-                      )}
-                    </p>
                   )}
+
+                  {!hold &&
+                    !booking &&
+                    selectedSeats.length >
+                      0 && (
+                      <div className="mt-5">
+                        <p className="text-sm font-bold text-zinc-500">
+                          {t(
+                            'showtimeSeats.selection.selected',
+                            {
+                              count:
+                                selectedSeats.length,
+                            },
+                          )}
+                        </p>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {selectedSeats.map(
+                            (seat) => (
+                              <span
+                                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-bold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
+                                key={
+                                  seat.seatId
+                                }
+                              >
+                                {
+                                  seat.row
+                                }
+                                {
+                                  seat.number
+                                }
+                              </span>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                  {!hold &&
+                    !booking &&
+                    selectedSeats.length ===
+                      0 && (
+                      <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                        {t(
+                          'showtimeSeats.selection.empty',
+                        )}
+                      </p>
+                    )}
 
                   {holdError && (
                     <div
@@ -762,7 +1026,18 @@ export function ShowtimeSeatsPage() {
                     </div>
                   )}
 
-                  {!isRestoring &&
+                  {bookingError && (
+                    <div
+                      className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700 dark:border-red-950 dark:bg-red-950/30 dark:text-red-300"
+                      role="alert"
+                    >
+                      {bookingError}
+                    </div>
+                  )}
+
+                  {!hold &&
+                    !booking &&
+                    !isRestoring &&
                     !isAuthenticated && (
                       <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
                         <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
@@ -782,7 +1057,9 @@ export function ShowtimeSeatsPage() {
                       </div>
                     )}
 
-                  {!isRestoring &&
+                  {!hold &&
+                    !booking &&
+                    !isRestoring &&
                     isAuthenticated && (
                       <button
                         className="mt-6 min-h-11 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
@@ -802,6 +1079,28 @@ export function ShowtimeSeatsPage() {
                             )
                           : t(
                               'showtimeSeats.hold.create',
+                            )}
+                      </button>
+                    )}
+
+                  {hasActiveHold &&
+                    isAuthenticated && (
+                      <button
+                        className="mt-6 min-h-11 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+                        disabled={
+                          isConfirmingBooking
+                        }
+                        onClick={() =>
+                          void handleConfirmBooking()
+                        }
+                        type="button"
+                      >
+                        {isConfirmingBooking
+                          ? t(
+                              'showtimeSeats.booking.confirming',
+                            )
+                          : t(
+                              'showtimeSeats.booking.confirm',
                             )}
                       </button>
                     )}
