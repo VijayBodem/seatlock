@@ -7,15 +7,22 @@ import {
 
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
+import { SeatRealtimeGateway } from '../realtime/seat-realtime.gateway.js';
 import { CreateHoldDto } from './dto/create-hold.dto.js';
 
 const HOLD_DURATION_MS = 5 * 60 * 1000;
+
+type ReleasedSeat = {
+  showtimeId: number;
+  seatId: number;
+};
 
 @Injectable()
 export class HoldsService {
   constructor(
     @Inject(DATABASE)
     private readonly database: typeof DatabaseClient,
+    private readonly seatRealtimeGateway: SeatRealtimeGateway,
   ) {}
 
   async create(
@@ -39,8 +46,8 @@ export class HoldsService {
 
     const expiresAt = new Date(Date.now() + HOLD_DURATION_MS).toISOString();
 
-    return this.database.transaction(async (tx) => {
-      const hold = await tx.orm.public.SeatHold.create({
+    const hold = await this.database.transaction(async (tx) => {
+      const createdHold = await tx.orm.public.SeatHold.create({
         showtimeId,
         userId,
         status: 'ACTIVE',
@@ -54,7 +61,7 @@ export class HoldsService {
           status: 'AVAILABLE',
         }).update({
           status: 'HELD',
-          holdId: hold.id,
+          holdId: createdHold.id,
         });
 
         if (!claimedSeat) {
@@ -65,13 +72,21 @@ export class HoldsService {
       }
 
       return {
-        id: hold.id,
-        showtimeId: hold.showtimeId,
-        status: hold.status,
-        expiresAt: hold.expiresAt,
+        id: createdHold.id,
+        showtimeId: createdHold.showtimeId,
+        status: createdHold.status,
+        expiresAt: createdHold.expiresAt,
         seatIds,
       };
     });
+
+    this.seatRealtimeGateway.emitSeatStatusChanged({
+      showtimeId,
+      seatIds,
+      status: 'HELD',
+    });
+
+    return hold;
   }
 
   async expireStaleHolds(showtimeId: number) {
@@ -85,7 +100,9 @@ export class HoldsService {
   private async expireActiveHolds(showtimeId?: number) {
     const now = Date.now();
 
-    await this.database.transaction(async (tx) => {
+    const releasedSeats = await this.database.transaction(async (tx) => {
+      const released: ReleasedSeat[] = [];
+
       const activeHolds =
         showtimeId === undefined
           ? await tx.orm.public.SeatHold.where({
@@ -118,7 +135,7 @@ export class HoldsService {
         }).all();
 
         for (const seat of heldSeats) {
-          await tx.orm.public.ShowtimeSeat.where({
+          const releasedSeat = await tx.orm.public.ShowtimeSeat.where({
             id: seat.id,
             holdId: hold.id,
             status: 'HELD',
@@ -126,8 +143,36 @@ export class HoldsService {
             status: 'AVAILABLE',
             holdId: null,
           });
+
+          if (releasedSeat) {
+            released.push({
+              showtimeId: hold.showtimeId,
+              seatId: seat.seatId,
+            });
+          }
         }
       }
+
+      return released;
     });
+
+    const seatIdsByShowtime = new Map<number, number[]>();
+
+    for (const releasedSeat of releasedSeats) {
+      const seatIds = seatIdsByShowtime.get(releasedSeat.showtimeId) ?? [];
+
+      seatIds.push(releasedSeat.seatId);
+      seatIdsByShowtime.set(releasedSeat.showtimeId, seatIds);
+    }
+
+    for (const [releasedShowtimeId, releasedSeatIds] of seatIdsByShowtime) {
+      this.seatRealtimeGateway.emitSeatStatusChanged({
+        showtimeId: releasedShowtimeId,
+        seatIds: [...new Set(releasedSeatIds)].sort(
+          (left, right) => left - right,
+        ),
+        status: 'AVAILABLE',
+      });
+    }
   }
 }

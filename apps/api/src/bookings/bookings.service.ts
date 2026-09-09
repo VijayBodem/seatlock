@@ -7,6 +7,7 @@ import {
 
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
+import { SeatRealtimeGateway } from '../realtime/seat-realtime.gateway.js';
 
 type BookingRecord = {
   id: number;
@@ -65,12 +66,13 @@ export class BookingsService {
   constructor(
     @Inject(DATABASE)
     private readonly database: typeof DatabaseClient,
+    private readonly seatRealtimeGateway: SeatRealtimeGateway,
   ) {}
 
   async confirm(holdId: number, userId: number) {
     const now = Date.now();
 
-    return this.database.transaction(async (tx) => {
+    const booking = await this.database.transaction(async (tx) => {
       const hold = await tx.orm.public.SeatHold.first({
         id: holdId,
         userId,
@@ -114,7 +116,7 @@ export class BookingsService {
         );
       }
 
-      const booking = await tx.orm.public.Booking.create({
+      const createdBooking = await tx.orm.public.Booking.create({
         showtimeId: hold.showtimeId,
         holdId,
         userId,
@@ -130,7 +132,7 @@ export class BookingsService {
         }).update({
           status: 'BOOKED',
           holdId: null,
-          bookingId: booking.id,
+          bookingId: createdBooking.id,
         });
 
         if (!bookedSeat) {
@@ -142,14 +144,24 @@ export class BookingsService {
         seatIds.push(seat.seatId);
       }
 
+      seatIds.sort((left, right) => left - right);
+
       return {
-        id: booking.id,
-        showtimeId: booking.showtimeId,
-        holdId: booking.holdId,
+        id: createdBooking.id,
+        showtimeId: createdBooking.showtimeId,
+        holdId: createdBooking.holdId,
         seatIds,
-        createdAt: booking.createdAt,
+        createdAt: createdBooking.createdAt,
       };
     });
+
+    this.seatRealtimeGateway.emitSeatStatusChanged({
+      showtimeId: booking.showtimeId,
+      seatIds: booking.seatIds,
+      status: 'BOOKED',
+    });
+
+    return booking;
   }
 
   async findMine(userId: number) {

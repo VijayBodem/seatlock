@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+﻿import { ConflictException, NotFoundException } from '@nestjs/common';
 import { jest } from '@jest/globals';
 
 import { BookingsService } from './bookings.service.js';
@@ -86,12 +86,21 @@ describe('BookingsService', () => {
     transaction: transactionMock,
   };
 
+  const emitSeatStatusChangedMock = jest.fn();
+
+  const seatRealtimeGatewayMock = {
+    emitSeatStatusChanged: emitSeatStatusChangedMock,
+  };
+
   let service: BookingsService;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    service = new BookingsService(databaseMock as never);
+    service = new BookingsService(
+      databaseMock as never,
+      seatRealtimeGatewayMock as never,
+    );
   });
 
   describe('confirm', () => {

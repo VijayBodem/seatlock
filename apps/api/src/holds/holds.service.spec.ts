@@ -53,6 +53,12 @@ describe('HoldsService', () => {
     transaction: transactionMock,
   };
 
+  const emitSeatStatusChangedMock = jest.fn();
+
+  const seatRealtimeGatewayMock = {
+    emitSeatStatusChanged: emitSeatStatusChangedMock,
+  };
+
   let service: HoldsService;
 
   beforeEach(() => {
@@ -60,11 +66,14 @@ describe('HoldsService', () => {
 
     seatHoldAllMock.mockResolvedValue([]);
 
-    service = new HoldsService(databaseMock as never);
+    service = new HoldsService(
+      databaseMock as never,
+      seatRealtimeGatewayMock as never,
+    );
   });
 
   describe('create', () => {
-    it('creates an owned hold and claims every requested seat', async () => {
+    it('creates an owned hold, claims every requested seat, and broadcasts the committed change', async () => {
       showtimeFirstMock.mockResolvedValue({
         id: 10,
       });
@@ -127,6 +136,13 @@ describe('HoldsService', () => {
         status: 'AVAILABLE',
       });
 
+      expect(emitSeatStatusChangedMock).toHaveBeenCalledTimes(1);
+      expect(emitSeatStatusChangedMock).toHaveBeenCalledWith({
+        showtimeId: 10,
+        seatIds: [1, 2],
+        status: 'HELD',
+      });
+
       expect(result).toEqual(
         expect.objectContaining({
           id: 50,
@@ -152,9 +168,10 @@ describe('HoldsService', () => {
 
       expect(transactionMock).not.toHaveBeenCalled();
       expect(seatHoldCreateMock).not.toHaveBeenCalled();
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
     });
 
-    it('throws ConflictException when a requested seat cannot be claimed', async () => {
+    it('throws ConflictException without broadcasting when a requested seat cannot be claimed', async () => {
       showtimeFirstMock.mockResolvedValue({
         id: 10,
       });
@@ -184,6 +201,8 @@ describe('HoldsService', () => {
           userId: 7,
         }),
       );
+
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
     });
   });
 
@@ -195,6 +214,8 @@ describe('HoldsService', () => {
         showtimeId: 10,
         status: 'ACTIVE',
       });
+
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
     });
 
     it('does not expire a hold whose expiration time is still in the future', async () => {
@@ -212,9 +233,10 @@ describe('HoldsService', () => {
       expect(seatHoldUpdateMock).not.toHaveBeenCalled();
       expect(showtimeSeatAllMock).not.toHaveBeenCalled();
       expect(showtimeSeatUpdateMock).not.toHaveBeenCalled();
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
     });
 
-    it('expires a stale hold and releases its held seats', async () => {
+    it('expires a stale hold, releases its held seats, and broadcasts availability', async () => {
       seatHoldAllMock.mockResolvedValue([
         {
           id: 40,
@@ -275,9 +297,16 @@ describe('HoldsService', () => {
         status: 'AVAILABLE',
         holdId: null,
       });
+
+      expect(emitSeatStatusChangedMock).toHaveBeenCalledTimes(1);
+      expect(emitSeatStatusChangedMock).toHaveBeenCalledWith({
+        showtimeId: 10,
+        seatIds: [1],
+        status: 'AVAILABLE',
+      });
     });
 
-    it('does not release seats when another transaction already expired the hold', async () => {
+    it('does not release or broadcast seats when another transaction already expired the hold', async () => {
       seatHoldAllMock.mockResolvedValue([
         {
           id: 40,
@@ -297,6 +326,45 @@ describe('HoldsService', () => {
 
       expect(showtimeSeatAllMock).not.toHaveBeenCalled();
       expect(showtimeSeatUpdateMock).not.toHaveBeenCalled();
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
+    });
+
+    it('does not broadcast a seat whose conditional release did not succeed', async () => {
+      seatHoldAllMock.mockResolvedValue([
+        {
+          id: 40,
+          showtimeId: 10,
+          status: 'ACTIVE',
+          expiresAt: '2000-01-01T00:00:00.000Z',
+        },
+      ]);
+
+      seatHoldUpdateMock.mockResolvedValue({
+        id: 40,
+        showtimeId: 10,
+        status: 'EXPIRED',
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 90,
+          showtimeId: 10,
+          seatId: 1,
+          status: 'HELD',
+          holdId: 40,
+        },
+      ]);
+
+      showtimeSeatUpdateMock.mockResolvedValue(null);
+
+      await service.expireStaleHolds(10);
+
+      expect(showtimeSeatUpdateMock).toHaveBeenCalledWith({
+        status: 'AVAILABLE',
+        holdId: null,
+      });
+
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
     });
   });
 
@@ -313,9 +381,11 @@ describe('HoldsService', () => {
           showtimeId: expect.any(Number),
         }),
       );
+
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
     });
 
-    it('expires stale active holds across different showtimes', async () => {
+    it('expires stale active holds across different showtimes and broadcasts each room', async () => {
       seatHoldAllMock.mockResolvedValue([
         {
           id: 40,
@@ -388,6 +458,20 @@ describe('HoldsService', () => {
       });
 
       expect(showtimeSeatUpdateMock).toHaveBeenCalledTimes(2);
+
+      expect(emitSeatStatusChangedMock).toHaveBeenCalledTimes(2);
+
+      expect(emitSeatStatusChangedMock).toHaveBeenCalledWith({
+        showtimeId: 10,
+        seatIds: [1],
+        status: 'AVAILABLE',
+      });
+
+      expect(emitSeatStatusChangedMock).toHaveBeenCalledWith({
+        showtimeId: 20,
+        seatIds: [2],
+        status: 'AVAILABLE',
+      });
     });
   });
 });
