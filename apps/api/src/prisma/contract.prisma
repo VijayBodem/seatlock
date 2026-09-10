@@ -22,12 +22,20 @@ enum SeatHoldStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
 model User {
   id           Int                        @id @default(autoincrement())
   email        String                     @unique
   passwordHash String
   holds        SeatHold[]
   bookings     Booking[]
+  payments     Payment[]
   createdAt    TimestamptzString          @default(now())
   updatedAt    temporal.updatedAtString()
 }
@@ -107,6 +115,7 @@ model SeatHold {
   expiresAt  TimestamptzString
   seats      ShowtimeSeat[]
   booking    Booking?
+  payment    Payment?
   createdAt  TimestamptzString @default(now())
   updatedAt  temporal.updatedAtString()
 }
@@ -122,4 +131,21 @@ model Booking {
   seats      ShowtimeSeat[]
   createdAt  TimestamptzString @default(now())
   updatedAt  temporal.updatedAtString()
+}
+
+
+model Payment {
+  id                Int                @id @default(autoincrement())
+  user              User               @relation(fields: [userId], references: [id])
+  userId            Int
+  hold              SeatHold           @relation(fields: [holdId], references: [id])
+  holdId            Int                @unique
+  status            PaymentStatus      @default(PENDING)
+  provider           String
+  providerPaymentId String             @unique
+  amount             Int
+  currency           String
+  succeededAt       TimestamptzString?
+  createdAt          TimestamptzString @default(now())
+  updatedAt          temporal.updatedAtString()
 }
