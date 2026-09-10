@@ -68,7 +68,8 @@
       "title": "Your seats",
       "selected_one": "{{count}} seat selected",
       "selected_other": "{{count}} seats selected",
-      "empty": "Select one or more available seats to continue."
+      "empty": "Select one or more available seats to continue.",
+      "total": "Total"
     },
     "hold": {
       "create": "Hold selected seats",

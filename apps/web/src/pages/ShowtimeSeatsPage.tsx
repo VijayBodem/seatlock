@@ -39,6 +39,16 @@ function getLocale(language: string): string {
   return 'en-IN'
 }
 
+function formatPrice(
+  amount: number,
+  language: string,
+): string {
+  return new Intl.NumberFormat(getLocale(language), {
+    style: 'currency',
+    currency: 'INR',
+  }).format(amount / 100)
+}
+
 function formatShowtime(
   startsAt: string,
   language: string,
@@ -394,6 +404,15 @@ export function ShowtimeSeatsPage() {
       ),
     [seats, selectedSeatIds],
   )
+
+  const selectedTotal = useMemo(
+  () =>
+    selectedSeats.reduce(
+      (total, seat) => total + seat.price,
+      0,
+    ),
+  [selectedSeats],
+)
 
     const availableSeatCount =
     useMemo(
@@ -1033,19 +1052,15 @@ export function ShowtimeSeatsPage() {
                       <div className="mt-4 flex flex-wrap gap-2">
                         {bookingSeats.map(
                           (seat) => (
-                            <span
-                              className="rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
-                              key={
-                                seat.seatId
-                              }
-                            >
-                              {
-                                seat.row
-                              }
-                              {
-                                seat.number
-                              }
-                            </span>
+                           <span
+                                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-bold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
+                                key={seat.seatId}
+                              >
+                                {seat.row}
+                                {seat.number}
+                                {' · '}
+                                {formatPrice(seat.price, i18n.language)}
+                              </span>
                           ),
                         )}
                       </div>
@@ -1120,23 +1135,28 @@ export function ShowtimeSeatsPage() {
                         <div className="mt-3 flex flex-wrap gap-2">
                           {selectedSeats.map(
                             (seat) => (
-                              <span
-                                className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-bold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
-                                key={
-                                  seat.seatId
-                                }
-                              >
-                                {
-                                  seat.row
-                                }
-                                {
-                                  seat.number
-                                }
-                              </span>
+                             <span
+                                  className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm font-bold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
+                                  key={seat.seatId}
+                                >
+                                  {seat.row}
+                                  {seat.number}
+                                  {' · '}
+                                  {formatPrice(seat.price, i18n.language)}
+                                </span>
                             ),
                           )}
                         </div>
-                      </div>
+                        <div className="mt-4 flex items-center justify-between border-t border-zinc-200 pt-4 dark:border-zinc-800">
+                              <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400">
+                                {t('showtimeSeats.selection.total')}
+                              </span>
+
+                              <span className="text-lg font-black text-zinc-950 dark:text-white">
+                                {formatPrice(selectedTotal, i18n.language)}
+                              </span>
+                            </div>
+                          </div>
                     )}
 
                   {!hold &&

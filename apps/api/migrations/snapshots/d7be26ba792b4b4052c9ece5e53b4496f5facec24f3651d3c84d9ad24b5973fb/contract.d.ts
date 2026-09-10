@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'4853dd79dc190f81495b36848e13a88b2d9c95eae74037afda849242c92c259c'>;
+  StorageHashBase<'d7be26ba792b4b4052c9ece5e53b4496f5facec24f3651d3c84d9ad24b5973fb'>;
 export type ExecutionHash =
   ExecutionHashBase<'35945cdb794a07b7032eab8d6c411db4b4c100136f0dbddf31d510d4e85e0fd3'>;
 export type ProfileHash =
@@ -300,7 +300,7 @@ export type FieldOutputTypes = {
       readonly showtimeId: CodecTypes['pg/int4@1']['output'];
       readonly seatId: CodecTypes['pg/int4@1']['output'];
       readonly status: 'AVAILABLE' | 'HELD' | 'BOOKED';
-      readonly price: CodecTypes['pg/int4@1']['output'];
+      readonly price: CodecTypes['pg/int4@1']['output'] | null;
       readonly holdId: CodecTypes['pg/int4@1']['output'] | null;
       readonly bookingId: CodecTypes['pg/int4@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -384,7 +384,7 @@ export type FieldInputTypes = {
       readonly showtimeId: CodecTypes['pg/int4@1']['input'];
       readonly seatId: CodecTypes['pg/int4@1']['input'];
       readonly status: 'AVAILABLE' | 'HELD' | 'BOOKED';
-      readonly price: CodecTypes['pg/int4@1']['input'];
+      readonly price: CodecTypes['pg/int4@1']['input'] | null;
       readonly holdId: CodecTypes['pg/int4@1']['input'] | null;
       readonly bookingId: CodecTypes['pg/int4@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -468,7 +468,7 @@ export type StorageColumnTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly holdId: CodecTypes['pg/int4@1']['output'] | null;
       readonly id: CodecTypes['pg/int4@1']['output'];
-      readonly price: CodecTypes['pg/int4@1']['output'];
+      readonly price: CodecTypes['pg/int4@1']['output'] | null;
       readonly seatId: CodecTypes['pg/int4@1']['output'];
       readonly showtimeId: CodecTypes['pg/int4@1']['output'];
       readonly status: 'AVAILABLE' | 'HELD' | 'BOOKED';
@@ -552,7 +552,7 @@ export type StorageColumnInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly holdId: CodecTypes['pg/int4@1']['input'] | null;
       readonly id: CodecTypes['pg/int4@1']['input'];
-      readonly price: CodecTypes['pg/int4@1']['input'];
+      readonly price: CodecTypes['pg/int4@1']['input'] | null;
       readonly seatId: CodecTypes['pg/int4@1']['input'];
       readonly showtimeId: CodecTypes['pg/int4@1']['input'];
       readonly status: 'AVAILABLE' | 'HELD' | 'BOOKED';
@@ -1109,7 +1109,7 @@ type ContractBase = Omit<
                 readonly price: {
                   readonly nativeType: 'int4';
                   readonly codecId: 'pg/int4@1';
-                  readonly nullable: false;
+                  readonly nullable: true;
                 };
                 readonly holdId: {
                   readonly nativeType: 'int4';
@@ -1893,7 +1893,7 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly price: {
-                readonly nullable: false;
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
               readonly holdId: {

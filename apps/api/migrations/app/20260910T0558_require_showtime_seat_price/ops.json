@@ -1,0 +1,76 @@
+[
+  {
+    "id": "backfill.showtimeSeat.price",
+    "label": "Backfill showtime seat prices",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "check for showtime seats without prices",
+        "sql": "\n              SELECT EXISTS (\n                SELECT 1\n                FROM \"public\".\"showtimeSeat\"\n                WHERE \"price\" IS NULL\n              ) AS ok\n            "
+      }
+    ],
+    "execute": [
+      {
+        "description": "backfill showtime seat prices from seat type",
+        "sql": "\n              UPDATE \"public\".\"showtimeSeat\" AS ss\n              SET \"price\" =\n                CASE s.\"type\"\n                  WHEN 'PREMIUM' THEN 35000\n                  WHEN 'STANDARD' THEN 20000\n                  WHEN 'ACCESSIBLE' THEN 20000\n                END\n              FROM \"public\".\"seat\" AS s\n              WHERE ss.\"seatId\" = s.\"id\"\n                AND ss.\"price\" IS NULL\n            "
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify all showtime seats have prices",
+        "sql": "\n              SELECT NOT EXISTS (\n                SELECT 1\n                FROM \"public\".\"showtimeSeat\"\n                WHERE \"price\" IS NULL\n              ) AS ok\n            "
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.showtimeSeat.price",
+    "label": "Set NOT NULL on \"showtimeSeat\".\"price\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "price",
+        "table": "showtimeSeat"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"price\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "showtimeSeat",
+          "price"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"price\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"showtimeSeat\" WHERE \"price\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"price\"",
+        "sql": "ALTER TABLE \"public\".\"showtimeSeat\" ALTER COLUMN \"price\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"price\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "showtimeSeat",
+          "price",
+          "NO"
+        ]
+      }
+    ]
+  }
+]

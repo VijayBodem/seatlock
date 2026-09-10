@@ -177,12 +177,14 @@ describe('ShowtimesService', () => {
         showtimeId: 100,
         seatId: 201,
         status: 'AVAILABLE',
+        price: 20000,
       });
 
       expect(showtimeSeatCreateMock).toHaveBeenNthCalledWith(2, {
         showtimeId: 100,
         seatId: 202,
         status: 'AVAILABLE',
+        price: 35000,
       });
     });
 

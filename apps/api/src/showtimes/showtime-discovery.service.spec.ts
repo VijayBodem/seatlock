@@ -413,18 +413,21 @@ describe('ShowtimeDiscoveryService', () => {
           showtimeId: 100,
           seatId: 201,
           status: 'AVAILABLE',
+          price: 20000,
         },
         {
           id: 2,
           showtimeId: 100,
           seatId: 202,
           status: 'HELD',
+          price: 35000,
         },
         {
           id: 3,
           showtimeId: 100,
           seatId: 203,
           status: 'AVAILABLE',
+          price: 20000,
         },
       ]);
 
@@ -521,18 +524,21 @@ describe('ShowtimeDiscoveryService', () => {
           showtimeId: 100,
           seatId: 203,
           status: 'BOOKED',
+          price: 20000,
         },
         {
           id: 1,
           showtimeId: 100,
           seatId: 201,
           status: 'AVAILABLE',
+          price: 20000,
         },
         {
           id: 2,
           showtimeId: 100,
           seatId: 202,
           status: 'HELD',
+          price: 35000,
         },
       ]);
 
@@ -570,6 +576,7 @@ describe('ShowtimeDiscoveryService', () => {
           number: 1,
           type: 'STANDARD',
           status: 'AVAILABLE',
+          price: 20000,
         },
         {
           id: 2,
@@ -578,6 +585,7 @@ describe('ShowtimeDiscoveryService', () => {
           number: 2,
           type: 'PREMIUM',
           status: 'HELD',
+          price: 35000,
         },
         {
           id: 3,
@@ -586,6 +594,7 @@ describe('ShowtimeDiscoveryService', () => {
           number: 1,
           type: 'ACCESSIBLE',
           status: 'BOOKED',
+          price: 20000,
         },
       ]);
 

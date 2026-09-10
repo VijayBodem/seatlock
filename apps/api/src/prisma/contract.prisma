@@ -95,6 +95,7 @@ model ShowtimeSeat {
   seat       Seat               @relation(fields: [seatId], references: [id])
   seatId     Int
   status     ShowtimeSeatStatus @default(AVAILABLE)
+  price      Int
   hold       SeatHold?          @relation(fields: [holdId], references: [id])
   holdId     Int?
   booking    Booking?           @relation(fields: [bookingId], references: [id])

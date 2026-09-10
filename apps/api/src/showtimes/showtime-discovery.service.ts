@@ -37,6 +37,7 @@ type ShowtimeSeatRecord = {
   showtimeId: number;
   seatId: number;
   status: string;
+  price: number;
 };
 
 function normalizeTimestamp(value: string): string {
@@ -225,6 +226,7 @@ export class ShowtimeDiscoveryService {
           number: seat.number,
           type: seat.type,
           status: showtimeSeat.status,
+          price: showtimeSeat.price,
         };
       })
       .sort((left, right) => {

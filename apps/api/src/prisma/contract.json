@@ -963,6 +963,13 @@
                   "kind": "scalar"
                 }
               },
+              "price": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "seatId": {
                 "nullable": false,
                 "type": {
@@ -1073,6 +1080,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "price": {
+                  "column": "price"
                 },
                 "seatId": {
                   "column": "seatId"
@@ -1973,6 +1983,11 @@
                   "nativeType": "int4",
                   "nullable": false
                 },
+                "price": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
                 "seatId": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
@@ -2261,7 +2276,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "590e8fe062b81a4b94c2bc48e5bd9ab5c334beca3024ce0dac63add5b5adf8f1"
+    "storageHash": "4853dd79dc190f81495b36848e13a88b2d9c95eae74037afda849242c92c259c"
   },
   "execution": {
     "executionHash": "35945cdb794a07b7032eab8d6c411db4b4c100136f0dbddf31d510d4e85e0fd3",

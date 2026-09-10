@@ -30,8 +30,8 @@ export type ShowtimeSeat = {
   number: number
   type: SeatType
   status: SeatStatus
+  price: number
 }
-
 export type CreateHoldRequest = {
   seatIds: number[]
 }

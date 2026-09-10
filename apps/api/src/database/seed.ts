@@ -2,6 +2,12 @@ import { db } from '../prisma/db.js';
 
 const SEED_PREFIX = 'SEED:';
 
+const SEAT_PRICES = {
+  STANDARD: 20000,
+  PREMIUM: 35000,
+  ACCESSIBLE: 20000,
+} as const;
+
 type SeedSeat = {
   row: string;
   number: number;
@@ -126,6 +132,61 @@ async function removeExistingSeedData() {
   for (const showtime of existingShowtimes) {
     if (!showtime.title.startsWith(SEED_PREFIX)) {
       continue;
+    }
+
+    const holds = await db.orm.public.SeatHold.where({
+      showtimeId: showtime.id,
+    }).all();
+
+    for (const hold of holds) {
+      const payment = await db.orm.public.Payment.first({
+        holdId: hold.id,
+      });
+
+      if (payment) {
+        await db.orm.public.Payment.where({
+          id: payment.id,
+        }).delete();
+      }
+
+      const booking = await db.orm.public.Booking.first({
+        holdId: hold.id,
+      });
+
+      if (booking) {
+        const bookedSeats = await db.orm.public.ShowtimeSeat.where({
+          bookingId: booking.id,
+        }).all();
+
+        for (const bookedSeat of bookedSeats) {
+          await db.orm.public.ShowtimeSeat.where({
+            id: bookedSeat.id,
+          }).update({
+            bookingId: null,
+            holdId: null,
+          });
+        }
+
+        await db.orm.public.Booking.where({
+          id: booking.id,
+        }).delete();
+      }
+
+      const heldSeats = await db.orm.public.ShowtimeSeat.where({
+        holdId: hold.id,
+      }).all();
+
+      for (const heldSeat of heldSeats) {
+        await db.orm.public.ShowtimeSeat.where({
+          id: heldSeat.id,
+        }).update({
+          holdId: null,
+        });
+      }
+
+      await db.orm.public.SeatHold.where({
+        id: hold.id,
+      }).delete();
     }
 
     const showtimeSeats = await db.orm.public.ShowtimeSeat.where({
@@ -272,6 +333,7 @@ async function createSeedData() {
         showtimeId: showtime.id,
         seatId: seat.id,
         status: 'AVAILABLE',
+        price: SEAT_PRICES[seat.type],
       });
     }
   }

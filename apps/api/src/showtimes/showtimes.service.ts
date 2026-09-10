@@ -6,6 +6,12 @@ import { HoldsService } from '../holds/holds.service.js';
 import { CreateShowtimeDto } from './dto/create-showtime.dto.js';
 import { UpdateShowtimeDto } from './dto/update-showtime.dto.js';
 
+const SEAT_PRICES = {
+  STANDARD: 20000,
+  PREMIUM: 35000,
+  ACCESSIBLE: 20000,
+} as const;
+
 @Injectable()
 export class ShowtimesService {
   constructor(
@@ -43,6 +49,7 @@ export class ShowtimesService {
           showtimeId: showtime.id,
           seatId: seat.id,
           status: 'AVAILABLE',
+          price: SEAT_PRICES[seat.type],
         });
       }
 
@@ -79,6 +86,7 @@ export class ShowtimesService {
       showtimeId: id,
     }).all();
   }
+
   async update(id: number, updateShowtimeDto: UpdateShowtimeDto) {
     await this.findOne(id);
 
