@@ -9,5 +9,6 @@ import { BookingsService } from './bookings.service.js';
   imports: [AuthModule, RealtimeModule],
   controllers: [BookingsController],
   providers: [BookingsService],
+  exports: [BookingsService],
 })
 export class BookingsModule {}

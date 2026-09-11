@@ -72,7 +72,61 @@ export class BookingsService {
   async confirm(holdId: number, userId: number) {
     const now = Date.now();
 
-    const booking = await this.database.transaction(async (tx) => {
+    const result = await this.database.transaction(async (tx) => {
+      /*
+       * Booking.holdId is unique, so this is our idempotency check.
+       *
+       * A Stripe webhook and the browser may both try to finalize the same
+       * paid hold. If one request already created the booking, return that
+       * booking instead of attempting to create a duplicate.
+       */
+      const existingBooking = await tx.orm.public.Booking.first({
+        holdId,
+        userId,
+      });
+
+      if (existingBooking) {
+        const bookedSeats = await tx.orm.public.ShowtimeSeat.where({
+          bookingId: existingBooking.id,
+          status: 'BOOKED',
+        }).all();
+
+        const seatIds = bookedSeats
+          .map((seat) => seat.seatId)
+          .sort((left, right) => left - right);
+
+        return {
+          booking: {
+            id: existingBooking.id,
+            showtimeId: existingBooking.showtimeId,
+            holdId: existingBooking.holdId,
+            seatIds,
+            createdAt: existingBooking.createdAt,
+          },
+          created: false,
+        };
+      }
+
+      /*
+       * A booking may only be finalized after Stripe has successfully
+       * collected the payment.
+       *
+       * The browser never controls this state. Payment.status is changed to
+       * SUCCEEDED only by our verified Stripe webhook handling.
+       */
+      const payment = await tx.orm.public.Payment.first({
+        holdId,
+        userId,
+        provider: 'stripe',
+        status: 'SUCCEEDED',
+      });
+
+      if (!payment) {
+        throw new ConflictException(
+          `Seat hold with id ${holdId} requires a successful payment`,
+        );
+      }
+
       const hold = await tx.orm.public.SeatHold.first({
         id: holdId,
         userId,
@@ -82,6 +136,14 @@ export class BookingsService {
         throw new NotFoundException(`Seat hold with id ${holdId} not found`);
       }
 
+      /*
+       * This is deliberately checked even after payment success.
+       *
+       * A payment may theoretically succeed after a hold has expired.
+       * In that situation SeatLock must never take seats away from another
+       * customer. The payment remains provider-successful, but this booking
+       * transaction refuses to reclaim the seats.
+       */
       if (
         hold.status !== 'ACTIVE' ||
         new Date(hold.expiresAt).getTime() <= now
@@ -102,6 +164,12 @@ export class BookingsService {
         );
       }
 
+      /*
+       * Conditional ACTIVE -> COMPLETED transition is the concurrency gate.
+       *
+       * If another transaction completes or expires this hold after our
+       * earlier reads, this update loses and the entire transaction aborts.
+       */
       const completedHold = await tx.orm.public.SeatHold.where({
         id: holdId,
         userId,
@@ -147,21 +215,31 @@ export class BookingsService {
       seatIds.sort((left, right) => left - right);
 
       return {
-        id: createdBooking.id,
-        showtimeId: createdBooking.showtimeId,
-        holdId: createdBooking.holdId,
-        seatIds,
-        createdAt: createdBooking.createdAt,
+        booking: {
+          id: createdBooking.id,
+          showtimeId: createdBooking.showtimeId,
+          holdId: createdBooking.holdId,
+          seatIds,
+          createdAt: createdBooking.createdAt,
+        },
+        created: true,
       };
     });
 
-    this.seatRealtimeGateway.emitSeatStatusChanged({
-      showtimeId: booking.showtimeId,
-      seatIds: booking.seatIds,
-      status: 'BOOKED',
-    });
+    /*
+     * Only the transaction that actually changed the seats emits BOOKED.
+     * Idempotent retries return the booking without broadcasting duplicate
+     * realtime events.
+     */
+    if (result.created) {
+      this.seatRealtimeGateway.emitSeatStatusChanged({
+        showtimeId: result.booking.showtimeId,
+        seatIds: result.booking.seatIds,
+        status: 'BOOKED',
+      });
+    }
 
-    return booking;
+    return result.booking;
   }
 
   async findMine(userId: number) {

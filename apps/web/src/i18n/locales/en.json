@@ -56,14 +56,14 @@
       "booked": "Booked"
     },
     "type": {
-  "standard": "Standard",
-  "premium": "Premium",
-  "accessible": "Accessible"
-},
-"legend": {
-  "seatTypes": "Seat types",
-  "seatStatus": "Seat status"
-},
+      "standard": "Standard",
+      "premium": "Premium",
+      "accessible": "Accessible"
+    },
+    "legend": {
+      "seatTypes": "Seat types",
+      "seatStatus": "Seat status"
+    },
     "selection": {
       "title": "Your seats",
       "selected_one": "{{count}} seat selected",
@@ -95,6 +95,20 @@
       "notFound": "This seat hold could not be found for your account.",
       "sessionExpired": "Your session has expired. Please sign in again.",
       "genericError": "We couldn't confirm your booking. Please try again."
+    },
+    "payment": {
+      "continue": "Continue to payment",
+      "preparing": "Preparing secure payment...",
+      "billingDetails": "Billing details",
+      "paymentDetails": "Payment details",
+      "paySecurely": "Pay securely",
+      "processing": "Processing payment...",
+      "requiredDetails": "Please complete all required payment details.",
+      "failed": "Payment could not be completed. Please try again.",
+      "incomplete": "Payment is not complete yet. Please try again.",
+      "unexpectedError": "Something went wrong while processing the payment. Please try again.",
+      "bookingProcessing": "Your payment was received, but booking confirmation is still processing. Please check My Bookings.",
+      "bookingVerificationPending": "Your payment was submitted, but we could not verify the booking yet. Please check My Bookings."
     }
   },
   "bookings": {

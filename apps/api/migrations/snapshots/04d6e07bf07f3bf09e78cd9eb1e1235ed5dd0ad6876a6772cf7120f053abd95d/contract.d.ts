@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'7d704f1debd5b4986976be4fcfe2be2cce91a789312156d28865424f08d43b8a'>;
+  StorageHashBase<'04d6e07bf07f3bf09e78cd9eb1e1235ed5dd0ad6876a6772cf7120f053abd95d'>;
 export type ExecutionHash =
   ExecutionHashBase<'35945cdb794a07b7032eab8d6c411db4b4c100136f0dbddf31d510d4e85e0fd3'>;
 export type ProfileHash =
@@ -546,7 +546,6 @@ export type FieldOutputTypes = {
         | 'SUCCEEDED'
         | 'REFUND_PENDING'
         | 'REFUNDED'
-        | 'REFUND_FAILED'
         | 'FAILED'
         | 'CANCELLED';
       readonly provider: CodecTypes['pg/text@1']['output'];
@@ -560,9 +559,6 @@ export type FieldOutputTypes = {
         CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly refundedAt:
         CodecTypes['pg/timestamptz-string@1']['output'] | null;
-      readonly refundFailedAt:
-        CodecTypes['pg/timestamptz-string@1']['output'] | null;
-      readonly refundFailureReason: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -646,7 +642,6 @@ export type FieldInputTypes = {
         | 'SUCCEEDED'
         | 'REFUND_PENDING'
         | 'REFUNDED'
-        | 'REFUND_FAILED'
         | 'FAILED'
         | 'CANCELLED';
       readonly provider: CodecTypes['pg/text@1']['input'];
@@ -660,9 +655,6 @@ export type FieldInputTypes = {
         CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly refundedAt:
         CodecTypes['pg/timestamptz-string@1']['input'] | null;
-      readonly refundFailedAt:
-        CodecTypes['pg/timestamptz-string@1']['input'] | null;
-      readonly refundFailureReason: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -748,9 +740,6 @@ export type StorageColumnTypes = {
       readonly providerRefundId: CodecTypes['pg/text@1']['output'] | null;
       readonly refundedAt:
         CodecTypes['pg/timestamptz-string@1']['output'] | null;
-      readonly refundFailedAt:
-        CodecTypes['pg/timestamptz-string@1']['output'] | null;
-      readonly refundFailureReason: CodecTypes['pg/text@1']['output'] | null;
       readonly refundRequestedAt:
         CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly status:
@@ -758,7 +747,6 @@ export type StorageColumnTypes = {
         | 'SUCCEEDED'
         | 'REFUND_PENDING'
         | 'REFUNDED'
-        | 'REFUND_FAILED'
         | 'FAILED'
         | 'CANCELLED';
       readonly succeededAt:
@@ -848,9 +836,6 @@ export type StorageColumnInputTypes = {
       readonly providerRefundId: CodecTypes['pg/text@1']['input'] | null;
       readonly refundedAt:
         CodecTypes['pg/timestamptz-string@1']['input'] | null;
-      readonly refundFailedAt:
-        CodecTypes['pg/timestamptz-string@1']['input'] | null;
-      readonly refundFailureReason: CodecTypes['pg/text@1']['input'] | null;
       readonly refundRequestedAt:
         CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly status:
@@ -858,7 +843,6 @@ export type StorageColumnInputTypes = {
         | 'SUCCEEDED'
         | 'REFUND_PENDING'
         | 'REFUNDED'
-        | 'REFUND_FAILED'
         | 'FAILED'
         | 'CANCELLED';
       readonly succeededAt:
@@ -1109,16 +1093,6 @@ type ContractBase = Omit<
                 readonly refundedAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
-                  readonly nullable: true;
-                };
-                readonly refundFailedAt: {
-                  readonly nativeType: 'timestamptz';
-                  readonly codecId: 'pg/timestamptz-string@1';
-                  readonly nullable: true;
-                };
-                readonly refundFailureReason: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                 };
                 readonly createdAt: {
@@ -1717,7 +1691,6 @@ type ContractBase = Omit<
                 'SUCCEEDED',
                 'REFUND_PENDING',
                 'REFUNDED',
-                'REFUND_FAILED',
                 'FAILED',
                 'CANCELLED',
               ];
@@ -1981,20 +1954,6 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
-              readonly refundFailedAt: {
-                readonly nullable: true;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/timestamptz-string@1';
-                };
-              };
-              readonly refundFailureReason: {
-                readonly nullable: true;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/text@1';
-                };
-              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -2056,10 +2015,6 @@ type ContractBase = Omit<
                   readonly column: 'refundRequestedAt';
                 };
                 readonly refundedAt: { readonly column: 'refundedAt' };
-                readonly refundFailedAt: { readonly column: 'refundFailedAt' };
-                readonly refundFailureReason: {
-                  readonly column: 'refundFailureReason';
-                };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
@@ -2788,10 +2743,6 @@ type ContractBase = Omit<
                 readonly value: 'REFUND_PENDING';
               },
               { readonly name: 'REFUNDED'; readonly value: 'REFUNDED' },
-              {
-                readonly name: 'REFUND_FAILED';
-                readonly value: 'REFUND_FAILED';
-              },
               { readonly name: 'FAILED'; readonly value: 'FAILED' },
               { readonly name: 'CANCELLED'; readonly value: 'CANCELLED' },
             ];

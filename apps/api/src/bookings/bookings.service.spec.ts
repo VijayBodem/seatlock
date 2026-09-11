@@ -22,6 +22,7 @@ describe('BookingsService', () => {
   const bookingCreateMock = jest.fn();
   const bookingFirstMock = jest.fn();
   const bookingAllMock = jest.fn();
+  const paymentFirstMock = jest.fn();
 
   const bookingWhereMock = jest.fn(() => ({
     all: bookingAllMock,
@@ -48,7 +49,11 @@ describe('BookingsService', () => {
           where: showtimeSeatWhereMock,
         },
         Booking: {
+          first: bookingFirstMock,
           create: bookingCreateMock,
+        },
+        Payment: {
+          first: paymentFirstMock,
         },
       },
     },
@@ -96,6 +101,20 @@ describe('BookingsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    bookingFirstMock.mockResolvedValue(null);
+
+    paymentFirstMock.mockResolvedValue({
+      id: 80,
+      userId: 7,
+      holdId: 10,
+      status: 'SUCCEEDED',
+      provider: 'stripe',
+      providerPaymentId: 'pi_test_123',
+      amount: 55000,
+      currency: 'inr',
+      succeededAt: '2026-09-10T11:00:00.000Z',
+    });
 
     service = new BookingsService(
       databaseMock as never,
@@ -257,6 +276,76 @@ describe('BookingsService', () => {
       await expect(service.confirm(10, 7)).rejects.toThrow(ConflictException);
 
       expect(bookingCreateMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects confirmation when the hold has no successful payment', async () => {
+      bookingFirstMock.mockResolvedValue(null);
+      paymentFirstMock.mockResolvedValue(null);
+
+      await expect(service.confirm(10, 7)).rejects.toThrow(
+        new ConflictException(
+          'Seat hold with id 10 requires a successful payment',
+        ),
+      );
+
+      expect(paymentFirstMock).toHaveBeenCalledWith({
+        holdId: 10,
+        userId: 7,
+        provider: 'stripe',
+        status: 'SUCCEEDED',
+      });
+
+      expect(seatHoldFirstMock).not.toHaveBeenCalled();
+      expect(bookingCreateMock).not.toHaveBeenCalled();
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
+    });
+
+    it('returns the existing booking idempotently without emitting another realtime event', async () => {
+      bookingFirstMock.mockResolvedValue({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        userId: 7,
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      showtimeSeatAllMock.mockResolvedValue([
+        {
+          id: 100,
+          showtimeId: 20,
+          seatId: 2,
+          status: 'BOOKED',
+          bookingId: 50,
+        },
+        {
+          id: 101,
+          showtimeId: 20,
+          seatId: 1,
+          status: 'BOOKED',
+          bookingId: 50,
+        },
+      ]);
+
+      await expect(service.confirm(10, 7)).resolves.toEqual({
+        id: 50,
+        showtimeId: 20,
+        holdId: 10,
+        seatIds: [1, 2],
+        createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      expect(bookingFirstMock).toHaveBeenCalledWith({
+        holdId: 10,
+        userId: 7,
+      });
+
+      expect(paymentFirstMock).not.toHaveBeenCalled();
+
+      expect(seatHoldFirstMock).not.toHaveBeenCalled();
+
+      expect(bookingCreateMock).not.toHaveBeenCalled();
+
+      expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
     });
 
     it('rejects a hold with no held seats', async () => {

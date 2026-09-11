@@ -32,6 +32,7 @@ export type ShowtimeSeat = {
   status: SeatStatus
   price: number
 }
+
 export type CreateHoldRequest = {
   seatIds: number[]
 }
@@ -42,6 +43,17 @@ export type SeatHold = {
   status: 'ACTIVE' | 'EXPIRED'
   expiresAt: string
   seatIds: number[]
+}
+
+export type PaymentStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED'
+
+export type PaymentSession = {
+  id: number
+  holdId: number
+  status: PaymentStatus
+  amount: number
+  currency: string
+  clientSecret: string
 }
 
 export type Booking = {
