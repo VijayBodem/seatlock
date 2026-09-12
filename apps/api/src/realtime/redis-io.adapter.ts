@@ -29,7 +29,16 @@ export class RedisIoAdapter extends IoAdapter {
       console.error('Redis subscriber error:', error);
     });
 
-    await Promise.all([pubClient.connect(), subClient.connect()]);
+    try {
+      await Promise.all([pubClient.connect(), subClient.connect()]);
+    } catch (error) {
+      await Promise.allSettled([
+        this.closeRedisClient(pubClient),
+        this.closeRedisClient(subClient),
+      ]);
+
+      throw error;
+    }
 
     this.pubClient = pubClient;
     this.subClient = subClient;
@@ -47,5 +56,27 @@ export class RedisIoAdapter extends IoAdapter {
     server.adapter(createAdapter(this.pubClient, this.subClient));
 
     return server;
+  }
+
+  async close(server: Server): Promise<void> {
+    await super.close(server);
+
+    await Promise.allSettled([
+      this.closeRedisClient(this.pubClient),
+      this.closeRedisClient(this.subClient),
+    ]);
+
+    this.pubClient = null;
+    this.subClient = null;
+  }
+
+  private async closeRedisClient(
+    client: RedisClientType | null,
+  ): Promise<void> {
+    if (!client?.isOpen) {
+      return;
+    }
+
+    await client.quit();
   }
 }

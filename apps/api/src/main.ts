@@ -26,6 +26,7 @@ async function bootstrap() {
   await redisIoAdapter.connectToRedis();
 
   app.useWebSocketAdapter(redisIoAdapter);
+  app.enableShutdownHooks();
 
   await app.listen(process.env.PORT ?? 3000);
 }
