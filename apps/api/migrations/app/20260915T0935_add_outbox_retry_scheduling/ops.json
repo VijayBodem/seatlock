@@ -1,0 +1,83 @@
+[
+  {
+    "id": "column.public.outboxEvent.nextAttemptAt",
+    "label": "Add column \"nextAttemptAt\" to \"outboxEvent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "nextAttemptAt",
+        "table": "outboxEvent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"nextAttemptAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "outboxEvent",
+          "nextAttemptAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"nextAttemptAt\"",
+        "sql": "ALTER TABLE \"public\".\"outboxEvent\" ADD COLUMN \"nextAttemptAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"nextAttemptAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "outboxEvent",
+          "nextAttemptAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.outboxEvent.outboxEvent_nextAttemptAt_idx_34b4e877",
+    "label": "Create index \"outboxEvent_nextAttemptAt_idx_34b4e877\" on \"outboxEvent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "outboxEvent_nextAttemptAt_idx_34b4e877",
+        "table": "outboxEvent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"outboxEvent_nextAttemptAt_idx_34b4e877\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"outboxEvent_nextAttemptAt_idx_34b4e877\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"outboxEvent_nextAttemptAt_idx_34b4e877\"",
+        "sql": "CREATE INDEX \"outboxEvent_nextAttemptAt_idx_34b4e877\" ON \"public\".\"outboxEvent\" (\"nextAttemptAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"outboxEvent_nextAttemptAt_idx_34b4e877\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"outboxEvent_nextAttemptAt_idx_34b4e877\""
+        ]
+      }
+    ]
+  }
+]

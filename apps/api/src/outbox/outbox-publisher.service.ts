@@ -15,10 +15,13 @@ type PendingOutboxEvent = {
   aggregateId: string;
   payload: unknown;
   attempts: number;
+  nextAttemptAt: string | null;
   claimedAt: string | null;
 };
 
 const OUTBOX_LEASE_MS = 30_000;
+const INITIAL_RETRY_DELAY_MS = 2_000;
+const MAX_RETRY_DELAY_MS = 60_000;
 
 @Injectable()
 export class OutboxPublisherService {
@@ -45,9 +48,14 @@ export class OutboxPublisherService {
         publishedAt: null,
       }).all();
 
-      const leaseCutoff = Date.now() - OUTBOX_LEASE_MS;
+      const now = Date.now();
+      const leaseCutoff = now - OUTBOX_LEASE_MS;
 
       for (const event of events) {
+        if (!this.isReadyForRetry(event.nextAttemptAt, now)) {
+          continue;
+        }
+
         if (!this.isAvailableForClaim(event.claimedAt, leaseCutoff)) {
           continue;
         }
@@ -57,6 +65,14 @@ export class OutboxPublisherService {
     } finally {
       this.publishing = false;
     }
+  }
+
+  private isReadyForRetry(nextAttemptAt: string | null, now: number): boolean {
+    if (nextAttemptAt === null) {
+      return true;
+    }
+
+    return new Date(nextAttemptAt).getTime() <= now;
   }
 
   private isAvailableForClaim(
@@ -77,6 +93,7 @@ export class OutboxPublisherService {
       id: event.id,
       publishedAt: null,
       claimedAt: event.claimedAt,
+      nextAttemptAt: event.nextAttemptAt,
     }).update({
       claimedBy: this.instanceId,
       claimedAt,
@@ -106,26 +123,39 @@ export class OutboxPublisherService {
         publishedAt: new Date().toISOString(),
         claimedBy: null,
         claimedAt: null,
+        nextAttemptAt: null,
         lastError: null,
       });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown Kafka publish error';
 
+      const attempts = claimedEvent.attempts + 1;
+      const retryDelayMs = this.getRetryDelayMs(attempts);
+      const nextAttemptAt = new Date(Date.now() + retryDelayMs).toISOString();
+
       await this.database.orm.public.OutboxEvent.where({
         id: claimedEvent.id,
         publishedAt: null,
         claimedBy: this.instanceId,
       }).update({
-        attempts: claimedEvent.attempts + 1,
+        attempts,
         lastError: message,
+        nextAttemptAt,
         claimedBy: null,
         claimedAt: null,
       });
 
       this.logger.error(
-        `Failed to publish outbox event ${claimedEvent.id}: ${message}`,
+        `Failed to publish outbox event ${claimedEvent.id}; retrying in ${retryDelayMs / 1000}s: ${message}`,
       );
     }
+  }
+
+  private getRetryDelayMs(attempts: number): number {
+    const exponentialDelay =
+      INITIAL_RETRY_DELAY_MS * 2 ** Math.max(0, attempts - 1);
+
+    return Math.min(exponentialDelay, MAX_RETRY_DELAY_MS);
   }
 }

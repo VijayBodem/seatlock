@@ -336,6 +336,13 @@
                   "kind": "scalar"
                 }
               },
+              "nextAttemptAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "payload": {
                 "nullable": false,
                 "type": {
@@ -380,6 +387,9 @@
                 },
                 "lastError": {
                   "column": "lastError"
+                },
+                "nextAttemptAt": {
+                  "column": "nextAttemptAt"
                 },
                 "payload": {
                   "column": "payload"
@@ -1672,6 +1682,11 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "nextAttemptAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
                 "payload": {
                   "codecId": "pg/json@1",
                   "nativeType": "json",
@@ -1700,6 +1715,14 @@
                   ],
                   "name": "outboxEvent_claimedAt_idx_622598dc",
                   "prefix": "outboxEvent_claimedAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "nextAttemptAt"
+                  ],
+                  "name": "outboxEvent_nextAttemptAt_idx_34b4e877",
+                  "prefix": "outboxEvent_nextAttemptAt_idx",
                   "unique": false
                 },
                 {
@@ -2602,7 +2625,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e28963872b428e9d005265f14e5ed863b2934d8eb5267562f8d423eec57a9823"
+    "storageHash": "0740bd0e79561a6426605e3f020921855af010ab204a57aefc8c2f80b7b55efc"
   },
   "execution": {
     "executionHash": "35945cdb794a07b7032eab8d6c411db4b4c100136f0dbddf31d510d4e85e0fd3",
