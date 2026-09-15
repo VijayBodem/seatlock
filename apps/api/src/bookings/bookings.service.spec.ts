@@ -23,6 +23,7 @@ describe('BookingsService', () => {
   const bookingFirstMock = jest.fn();
   const bookingAllMock = jest.fn();
   const paymentFirstMock = jest.fn();
+  const outboxEventCreateMock = jest.fn();
 
   const bookingWhereMock = jest.fn(() => ({
     all: bookingAllMock,
@@ -54,6 +55,9 @@ describe('BookingsService', () => {
         },
         Payment: {
           first: paymentFirstMock,
+        },
+        OutboxEvent: {
+          create: outboxEventCreateMock,
         },
       },
     },
@@ -182,6 +186,22 @@ describe('BookingsService', () => {
         holdId: 10,
         seatIds: [1, 2],
         createdAt: '2026-09-06T00:00:00.000Z',
+      });
+
+      expect(outboxEventCreateMock).toHaveBeenCalledTimes(1);
+
+      expect(outboxEventCreateMock).toHaveBeenCalledWith({
+        eventType: 'BookingConfirmed',
+        aggregateType: 'Booking',
+        aggregateId: '50',
+        payload: {
+          bookingId: 50,
+          holdId: 10,
+          showtimeId: 20,
+          userId: 7,
+          seatIds: [1, 2],
+          occurredAt: '2026-09-06T00:00:00.000Z',
+        },
       });
 
       expect(transactionMock).toHaveBeenCalledTimes(1);
@@ -346,6 +366,8 @@ describe('BookingsService', () => {
       expect(bookingCreateMock).not.toHaveBeenCalled();
 
       expect(emitSeatStatusChangedMock).not.toHaveBeenCalled();
+
+      expect(outboxEventCreateMock).not.toHaveBeenCalled();
     });
 
     it('rejects a hold with no held seats', async () => {

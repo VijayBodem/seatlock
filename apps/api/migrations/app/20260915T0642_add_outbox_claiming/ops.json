@@ -1,0 +1,125 @@
+[
+  {
+    "id": "column.public.outboxEvent.claimedAt",
+    "label": "Add column \"claimedAt\" to \"outboxEvent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "claimedAt",
+        "table": "outboxEvent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"claimedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "outboxEvent",
+          "claimedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"claimedAt\"",
+        "sql": "ALTER TABLE \"public\".\"outboxEvent\" ADD COLUMN \"claimedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"claimedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "outboxEvent",
+          "claimedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.outboxEvent.claimedBy",
+    "label": "Add column \"claimedBy\" to \"outboxEvent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "claimedBy",
+        "table": "outboxEvent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"claimedBy\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "outboxEvent",
+          "claimedBy"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"claimedBy\"",
+        "sql": "ALTER TABLE \"public\".\"outboxEvent\" ADD COLUMN \"claimedBy\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"claimedBy\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "outboxEvent",
+          "claimedBy"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.outboxEvent.outboxEvent_claimedAt_idx_622598dc",
+    "label": "Create index \"outboxEvent_claimedAt_idx_622598dc\" on \"outboxEvent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "outboxEvent_claimedAt_idx_622598dc",
+        "table": "outboxEvent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"outboxEvent_claimedAt_idx_622598dc\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"outboxEvent_claimedAt_idx_622598dc\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"outboxEvent_claimedAt_idx_622598dc\"",
+        "sql": "CREATE INDEX \"outboxEvent_claimedAt_idx_622598dc\" ON \"public\".\"outboxEvent\" (\"claimedAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"outboxEvent_claimedAt_idx_622598dc\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"outboxEvent_claimedAt_idx_622598dc\""
+        ]
+      }
+    ]
+  }
+]

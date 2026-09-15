@@ -8,6 +8,10 @@
       "model": "Booking",
       "namespace": "public"
     },
+    "outboxEvent": {
+      "model": "OutboxEvent",
+      "namespace": "public"
+    },
     "payment": {
       "model": "Payment",
       "namespace": "public"
@@ -184,8 +188,12 @@
               "hold": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["holdId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "holdId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "SeatHold",
@@ -195,8 +203,12 @@
               "seats": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["bookingId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "bookingId"
+                  ]
                 },
                 "to": {
                   "model": "ShowtimeSeat",
@@ -206,8 +218,12 @@
               "showtime": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["showtimeId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "showtimeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Showtime",
@@ -217,8 +233,12 @@
               "user": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -249,6 +269,127 @@
               },
               "namespaceId": "public",
               "table": "booking"
+            }
+          },
+          "OutboxEvent": {
+            "fields": {
+              "aggregateId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "aggregateType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "attempts": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "claimedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "claimedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "eventType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastError": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "payload": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/json@1",
+                  "kind": "scalar"
+                }
+              },
+              "publishedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "aggregateId": {
+                  "column": "aggregateId"
+                },
+                "aggregateType": {
+                  "column": "aggregateType"
+                },
+                "attempts": {
+                  "column": "attempts"
+                },
+                "claimedAt": {
+                  "column": "claimedAt"
+                },
+                "claimedBy": {
+                  "column": "claimedBy"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "eventType": {
+                  "column": "eventType"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastError": {
+                  "column": "lastError"
+                },
+                "payload": {
+                  "column": "payload"
+                },
+                "publishedAt": {
+                  "column": "publishedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "outboxEvent"
             }
           },
           "Payment": {
@@ -376,8 +517,12 @@
               "hold": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["holdId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "holdId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "SeatHold",
@@ -387,8 +532,12 @@
               "user": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -493,8 +642,12 @@
               "seats": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["screenId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "screenId"
+                  ]
                 },
                 "to": {
                   "model": "Seat",
@@ -504,8 +657,12 @@
               "showtimes": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["screenId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "screenId"
+                  ]
                 },
                 "to": {
                   "model": "Showtime",
@@ -515,8 +672,12 @@
               "venue": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["venueId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "venueId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Venue",
@@ -608,8 +769,12 @@
               "screen": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["screenId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "screenId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Screen",
@@ -619,8 +784,12 @@
               "showtimeSeats": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["seatId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "seatId"
+                  ]
                 },
                 "to": {
                   "model": "ShowtimeSeat",
@@ -718,8 +887,12 @@
               "booking": {
                 "cardinality": "1:1",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["holdId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "holdId"
+                  ]
                 },
                 "to": {
                   "model": "Booking",
@@ -729,8 +902,12 @@
               "payment": {
                 "cardinality": "1:1",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["holdId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "holdId"
+                  ]
                 },
                 "to": {
                   "model": "Payment",
@@ -740,8 +917,12 @@
               "seats": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["holdId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "holdId"
+                  ]
                 },
                 "to": {
                   "model": "ShowtimeSeat",
@@ -751,8 +932,12 @@
               "showtime": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["showtimeId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "showtimeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Showtime",
@@ -762,8 +947,12 @@
               "user": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["userId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "User",
@@ -848,8 +1037,12 @@
               "bookings": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["showtimeId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "showtimeId"
+                  ]
                 },
                 "to": {
                   "model": "Booking",
@@ -859,8 +1052,12 @@
               "holds": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["showtimeId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "showtimeId"
+                  ]
                 },
                 "to": {
                   "model": "SeatHold",
@@ -870,8 +1067,12 @@
               "screen": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["screenId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "screenId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Screen",
@@ -881,8 +1082,12 @@
               "showtimeSeats": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["showtimeId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "showtimeId"
+                  ]
                 },
                 "to": {
                   "model": "ShowtimeSeat",
@@ -991,8 +1196,12 @@
               "booking": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["bookingId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "bookingId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Booking",
@@ -1002,8 +1211,12 @@
               "hold": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["holdId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "holdId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "SeatHold",
@@ -1013,8 +1226,12 @@
               "seat": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["seatId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "seatId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Seat",
@@ -1024,8 +1241,12 @@
               "showtime": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": ["showtimeId"],
-                  "targetFields": ["id"]
+                  "localFields": [
+                    "showtimeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
                 },
                 "to": {
                   "model": "Showtime",
@@ -1109,8 +1330,12 @@
               "bookings": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "Booking",
@@ -1120,8 +1345,12 @@
               "holds": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "SeatHold",
@@ -1131,8 +1360,12 @@
               "payments": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["userId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
                 },
                 "to": {
                   "model": "Payment",
@@ -1211,8 +1444,12 @@
               "screens": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": ["id"],
-                  "targetFields": ["venueId"]
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "venueId"
+                  ]
                 },
                 "to": {
                   "model": "Screen",
@@ -1298,36 +1535,48 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": ["showtimeId"],
+                    "columns": [
+                      "showtimeId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "booking"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "showtime"
                   }
                 },
                 {
                   "source": {
-                    "columns": ["holdId"],
+                    "columns": [
+                      "holdId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "booking"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "seatHold"
                   }
                 },
                 {
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "booking"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "user"
                   }
@@ -1335,26 +1584,140 @@
               ],
               "indexes": [
                 {
-                  "columns": ["showtimeId"],
+                  "columns": [
+                    "showtimeId"
+                  ],
                   "name": "booking_showtimeId_idx_4ae2449a",
                   "prefix": "booking_showtimeId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "booking_userId_idx_a489d58a",
                   "prefix": "booking_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["holdId"]
+                  "columns": [
+                    "holdId"
+                  ]
                 }
               ]
+            },
+            "outboxEvent": {
+              "columns": {
+                "aggregateId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "aggregateType": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "attempts": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "claimedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "claimedBy": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "eventType": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "lastError": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "payload": {
+                  "codecId": "pg/json@1",
+                  "nativeType": "json",
+                  "nullable": false
+                },
+                "publishedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "aggregateType",
+                    "aggregateId"
+                  ],
+                  "name": "outboxEvent_aggregateType_aggregateId_idx_816576d9",
+                  "prefix": "outboxEvent_aggregateType_aggregateId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "claimedAt"
+                  ],
+                  "name": "outboxEvent_claimedAt_idx_622598dc",
+                  "prefix": "outboxEvent_claimedAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "publishedAt",
+                    "createdAt"
+                  ],
+                  "name": "outboxEvent_publishedAt_createdAt_idx_e43e9da7",
+                  "prefix": "outboxEvent_publishedAt_createdAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "payment": {
               "checks": [
@@ -1467,24 +1830,32 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "payment"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "user"
                   }
                 },
                 {
                   "source": {
-                    "columns": ["holdId"],
+                    "columns": [
+                      "holdId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "payment"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "seatHold"
                   }
@@ -1492,24 +1863,34 @@
               ],
               "indexes": [
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "payment_userId_idx_a489d58a",
                   "prefix": "payment_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["holdId"]
+                  "columns": [
+                    "holdId"
+                  ]
                 },
                 {
-                  "columns": ["providerPaymentId"]
+                  "columns": [
+                    "providerPaymentId"
+                  ]
                 },
                 {
-                  "columns": ["providerRefundId"]
+                  "columns": [
+                    "providerRefundId"
+                  ]
                 }
               ]
             },
@@ -1552,12 +1933,16 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": ["venueId"],
+                    "columns": [
+                      "venueId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "screen"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "venue"
                   }
@@ -1565,14 +1950,18 @@
               ],
               "indexes": [
                 {
-                  "columns": ["venueId"],
+                  "columns": [
+                    "venueId"
+                  ],
                   "name": "screen_venueId_idx_b49e8dab",
                   "prefix": "screen_venueId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -1642,12 +2031,16 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": ["screenId"],
+                    "columns": [
+                      "screenId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "seat"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "screen"
                   }
@@ -1655,18 +2048,26 @@
               ],
               "indexes": [
                 {
-                  "columns": ["screenId"],
+                  "columns": [
+                    "screenId"
+                  ],
                   "name": "seat_screenId_idx_2d3dbe54",
                   "prefix": "seat_screenId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["screenId", "row", "number"]
+                  "columns": [
+                    "screenId",
+                    "row",
+                    "number"
+                  ]
                 }
               ]
             },
@@ -1736,24 +2137,32 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": ["showtimeId"],
+                    "columns": [
+                      "showtimeId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "seatHold"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "showtime"
                   }
                 },
                 {
                   "source": {
-                    "columns": ["userId"],
+                    "columns": [
+                      "userId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "seatHold"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "user"
                   }
@@ -1761,20 +2170,26 @@
               ],
               "indexes": [
                 {
-                  "columns": ["showtimeId"],
+                  "columns": [
+                    "showtimeId"
+                  ],
                   "name": "seatHold_showtimeId_idx_4ae2449a",
                   "prefix": "seatHold_showtimeId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["userId"],
+                  "columns": [
+                    "userId"
+                  ],
                   "name": "seatHold_userId_idx_a489d58a",
                   "prefix": "seatHold_userId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -1822,12 +2237,16 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": ["screenId"],
+                    "columns": [
+                      "screenId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "showtime"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "screen"
                   }
@@ -1835,14 +2254,18 @@
               ],
               "indexes": [
                 {
-                  "columns": ["screenId"],
+                  "columns": [
+                    "screenId"
+                  ],
                   "name": "showtime_screenId_idx_2d3dbe54",
                   "prefix": "showtime_screenId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             },
@@ -1922,48 +2345,64 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": ["showtimeId"],
+                    "columns": [
+                      "showtimeId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "showtimeSeat"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "showtime"
                   }
                 },
                 {
                   "source": {
-                    "columns": ["seatId"],
+                    "columns": [
+                      "seatId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "showtimeSeat"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "seat"
                   }
                 },
                 {
                   "source": {
-                    "columns": ["holdId"],
+                    "columns": [
+                      "holdId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "showtimeSeat"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "seatHold"
                   }
                 },
                 {
                   "source": {
-                    "columns": ["bookingId"],
+                    "columns": [
+                      "bookingId"
+                    ],
                     "namespaceId": "public",
                     "tableName": "showtimeSeat"
                   },
                   "target": {
-                    "columns": ["id"],
+                    "columns": [
+                      "id"
+                    ],
                     "namespaceId": "public",
                     "tableName": "booking"
                   }
@@ -1971,36 +2410,49 @@
               ],
               "indexes": [
                 {
-                  "columns": ["bookingId"],
+                  "columns": [
+                    "bookingId"
+                  ],
                   "name": "showtimeSeat_bookingId_idx_17848f4a",
                   "prefix": "showtimeSeat_bookingId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["holdId"],
+                  "columns": [
+                    "holdId"
+                  ],
                   "name": "showtimeSeat_holdId_idx_c9785d82",
                   "prefix": "showtimeSeat_holdId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["seatId"],
+                  "columns": [
+                    "seatId"
+                  ],
                   "name": "showtimeSeat_seatId_idx_3076c3cd",
                   "prefix": "showtimeSeat_seatId_idx",
                   "unique": false
                 },
                 {
-                  "columns": ["showtimeId"],
+                  "columns": [
+                    "showtimeId"
+                  ],
                   "name": "showtimeSeat_showtimeId_idx_4ae2449a",
                   "prefix": "showtimeSeat_showtimeId_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["showtimeId", "seatId"]
+                  "columns": [
+                    "showtimeId",
+                    "seatId"
+                  ]
                 }
               ]
             },
@@ -2043,11 +2495,15 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": [
                 {
-                  "columns": ["email"]
+                  "columns": [
+                    "email"
+                  ]
                 }
               ]
             },
@@ -2095,7 +2551,9 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": ["id"]
+                "columns": [
+                  "id"
+                ]
               },
               "uniques": []
             }
@@ -2115,15 +2573,28 @@
             },
             "SeatHoldStatus": {
               "kind": "valueSet",
-              "values": ["ACTIVE", "COMPLETED", "EXPIRED", "CANCELLED"]
+              "values": [
+                "ACTIVE",
+                "COMPLETED",
+                "EXPIRED",
+                "CANCELLED"
+              ]
             },
             "SeatType": {
               "kind": "valueSet",
-              "values": ["STANDARD", "PREMIUM", "ACCESSIBLE"]
+              "values": [
+                "STANDARD",
+                "PREMIUM",
+                "ACCESSIBLE"
+              ]
             },
             "ShowtimeSeatStatus": {
               "kind": "valueSet",
-              "values": ["AVAILABLE", "HELD", "BOOKED"]
+              "values": [
+                "AVAILABLE",
+                "HELD",
+                "BOOKED"
+              ]
             }
           }
         },
@@ -2131,7 +2602,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7d704f1debd5b4986976be4fcfe2be2cce91a789312156d28865424f08d43b8a"
+    "storageHash": "e28963872b428e9d005265f14e5ed863b2934d8eb5267562f8d423eec57a9823"
   },
   "execution": {
     "executionHash": "35945cdb794a07b7032eab8d6c411db4b4c100136f0dbddf31d510d4e85e0fd3",

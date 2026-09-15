@@ -8,6 +8,7 @@ import {
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
 import { SeatRealtimeGateway } from '../realtime/seat-realtime.gateway.js';
+import { createBookingConfirmedEvent } from '../outbox/outbox-events.js';
 
 type BookingRecord = {
   id: number;
@@ -213,6 +214,17 @@ export class BookingsService {
       }
 
       seatIds.sort((left, right) => left - right);
+
+      const bookingConfirmedEvent = createBookingConfirmedEvent({
+        bookingId: createdBooking.id,
+        holdId: createdBooking.holdId,
+        showtimeId: createdBooking.showtimeId,
+        userId,
+        seatIds,
+        occurredAt: createdBooking.createdAt,
+      });
+
+      await tx.orm.public.OutboxEvent.create(bookingConfirmedEvent);
 
       return {
         booking: {

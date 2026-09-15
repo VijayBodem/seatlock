@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { BookingsModule } from './bookings/bookings.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HoldsModule } from './holds/holds.module.js';
+import { OutboxModule } from './outbox/outbox.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { ScreensModule } from './screens/screens.module.js';
@@ -18,6 +19,7 @@ import { VenuesModule } from './venues/venues.module.js';
   imports: [
     ScheduleModule.forRoot(),
     DatabaseModule,
+    OutboxModule,
     AuthModule,
     VenuesModule,
     ScreensModule,

@@ -22,7 +22,6 @@ enum SeatHoldStatus {
   CANCELLED
 }
 
-
 enum PaymentStatus {
   PENDING
   SUCCEEDED
@@ -138,24 +137,45 @@ model Booking {
   updatedAt  temporal.updatedAtString()
 }
 
-
 model Payment {
-  id                Int                @id @default(autoincrement())
-  user              User               @relation(fields: [userId], references: [id])
-  userId            Int
-  hold              SeatHold           @relation(fields: [holdId], references: [id])
-  holdId            Int                @unique
-  status            PaymentStatus      @default(PENDING)
-  provider           String
-  providerPaymentId String             @unique
-  providerRefundId  String?            @unique
-  amount             Int
-  currency           String
-  succeededAt       TimestamptzString?
-  refundRequestedAt TimestamptzString?
-  refundedAt        TimestamptzString?
-  refundFailedAt     TimestamptzString?
+  id                  Int                @id @default(autoincrement())
+  user                User               @relation(fields: [userId], references: [id])
+  userId              Int
+  hold                SeatHold           @relation(fields: [holdId], references: [id])
+  holdId              Int                @unique
+  status              PaymentStatus      @default(PENDING)
+  provider            String
+  providerPaymentId   String             @unique
+  providerRefundId    String?            @unique
+  amount              Int
+  currency            String
+  succeededAt         TimestamptzString?
+  refundRequestedAt   TimestamptzString?
+  refundedAt          TimestamptzString?
+  refundFailedAt      TimestamptzString?
   refundFailureReason String?
-  createdAt          TimestamptzString @default(now())
-  updatedAt          temporal.updatedAtString()
+  createdAt           TimestamptzString  @default(now())
+  updatedAt           temporal.updatedAtString()
+}
+
+model OutboxEvent {
+  id            Int               @id @default(autoincrement())
+  eventType     String
+  aggregateType String
+  aggregateId   String
+  payload       Json
+
+  attempts      Int               @default(0)
+  lastError     String?
+
+  publishedAt   TimestamptzString?
+
+  claimedBy     String?
+  claimedAt     TimestamptzString?
+
+  createdAt     TimestamptzString @default(now())
+
+  @@index([publishedAt, createdAt])
+  @@index([claimedAt])
+  @@index([aggregateType, aggregateId])
 }
