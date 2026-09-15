@@ -4,6 +4,8 @@ import { OutboxPublisherService } from './outbox-publisher.service.js';
 
 describe('OutboxPublisherService', () => {
   const allMock = jest.fn();
+  const limitMock = jest.fn();
+  const orderByMock = jest.fn();
   const updateMock = jest.fn();
   const whereMock = jest.fn();
   const publishDomainEventMock = jest.fn();
@@ -43,6 +45,14 @@ describe('OutboxPublisherService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    limitMock.mockReturnValue({
+      all: allMock,
+    });
+
+    orderByMock.mockReturnValue({
+      limit: limitMock,
+    });
+
     whereMock.mockImplementation((condition) => {
       if ('id' in condition) {
         return {
@@ -51,9 +61,50 @@ describe('OutboxPublisherService', () => {
       }
 
       return {
-        all: allMock,
+        orderBy: orderByMock,
       };
     });
+  });
+
+  it('queries the oldest unpublished events with a bounded scan limit', async () => {
+    allMock.mockResolvedValue([]);
+
+    const service = new OutboxPublisherService(
+      databaseMock as never,
+      kafkaServiceMock as never,
+    );
+
+    await service.publishPendingEvents();
+
+    expect(whereMock).toHaveBeenCalledWith({
+      publishedAt: null,
+    });
+
+    expect(orderByMock).toHaveBeenCalledTimes(1);
+
+    const orderByCallback = orderByMock.mock.calls[0][0] as (event: {
+      createdAt: {
+        asc: () => unknown;
+      };
+    }) => unknown;
+
+    const ascendingOrder = {
+      direction: 'asc',
+    };
+
+    const ascMock = jest.fn(() => ascendingOrder);
+
+    const result = orderByCallback({
+      createdAt: {
+        asc: ascMock,
+      },
+    });
+
+    expect(ascMock).toHaveBeenCalledTimes(1);
+    expect(result).toBe(ascendingOrder);
+
+    expect(limitMock).toHaveBeenCalledWith(100);
+    expect(allMock).toHaveBeenCalledTimes(1);
   });
 
   it('claims, publishes, and marks a pending event as published', async () => {
@@ -360,5 +411,45 @@ describe('OutboxPublisherService', () => {
 
     expect(nextAttemptAt).toBeGreaterThanOrEqual(beforePublish + 60_000);
     expect(nextAttemptAt).toBeLessThanOrEqual(afterPublish + 60_000);
+  });
+
+  it('attempts no more than 25 eligible events in one publisher run', async () => {
+    const events = Array.from({ length: 30 }, (_, index) => ({
+      ...pendingEvent,
+      id: index + 1,
+      aggregateId: String(index + 1),
+    }));
+
+    allMock.mockResolvedValue(events);
+
+    updateMock.mockImplementation((update) => {
+      if ('claimedAt' in update && update.claimedAt !== null) {
+        return {
+          ...pendingEvent,
+          id: updateMock.mock.calls.length,
+          aggregateId: String(updateMock.mock.calls.length),
+          claimedBy: 'instance-id',
+          claimedAt: update.claimedAt,
+          publishedAt: null,
+          lastError: null,
+        };
+      }
+
+      return {
+        ...pendingEvent,
+        publishedAt: new Date().toISOString(),
+      };
+    });
+
+    publishDomainEventMock.mockResolvedValue(undefined);
+
+    const service = new OutboxPublisherService(
+      databaseMock as never,
+      kafkaServiceMock as never,
+    );
+
+    await service.publishPendingEvents();
+
+    expect(publishDomainEventMock).toHaveBeenCalledTimes(25);
   });
 });

@@ -22,6 +22,8 @@ type PendingOutboxEvent = {
 const OUTBOX_LEASE_MS = 30_000;
 const INITIAL_RETRY_DELAY_MS = 2_000;
 const MAX_RETRY_DELAY_MS = 60_000;
+const OUTBOX_SCAN_LIMIT = 100;
+const OUTBOX_PUBLISH_LIMIT = 25;
 
 @Injectable()
 export class OutboxPublisherService {
@@ -46,12 +48,20 @@ export class OutboxPublisherService {
     try {
       const events = await this.database.orm.public.OutboxEvent.where({
         publishedAt: null,
-      }).all();
+      })
+        .orderBy((event) => event.createdAt.asc())
+        .limit(OUTBOX_SCAN_LIMIT)
+        .all();
 
       const now = Date.now();
       const leaseCutoff = now - OUTBOX_LEASE_MS;
+      let processedEvents = 0;
 
       for (const event of events) {
+        if (processedEvents >= OUTBOX_PUBLISH_LIMIT) {
+          break;
+        }
+
         if (!this.isReadyForRetry(event.nextAttemptAt, now)) {
           continue;
         }
@@ -61,6 +71,7 @@ export class OutboxPublisherService {
         }
 
         await this.claimAndPublish(event);
+        processedEvents += 1;
       }
     } finally {
       this.publishing = false;
