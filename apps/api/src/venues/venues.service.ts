@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
 import { CreateVenueDto } from './dto/create-venue.dto.js';
@@ -10,6 +15,18 @@ export class VenuesService {
     @Inject(DATABASE)
     private readonly database: typeof DatabaseClient,
   ) {}
+
+  private async ensureVenueHasNoScreens(venueId: number) {
+    const screen = await this.database.orm.public.Screen.first({
+      venueId,
+    });
+
+    if (screen) {
+      throw new ConflictException(
+        `Venue with id ${venueId} cannot be deleted because it has screens`,
+      );
+    }
+  }
 
   async create(createVenueDto: CreateVenueDto) {
     return this.database.orm.public.Venue.create({
@@ -41,6 +58,7 @@ export class VenuesService {
 
   async remove(id: number) {
     await this.findOne(id);
+    await this.ensureVenueHasNoScreens(id);
 
     return this.database.orm.public.Venue.where({ id }).delete();
   }

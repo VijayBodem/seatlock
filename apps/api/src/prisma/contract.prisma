@@ -3,6 +3,11 @@
 // Physical venue structure:
 // Venue -> Screen -> Seat
 
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
 enum SeatType {
   STANDARD
   PREMIUM
@@ -36,6 +41,7 @@ model User {
   id           Int                        @id @default(autoincrement())
   email        String                     @unique
   passwordHash String
+  role         UserRole                   @default(CUSTOMER)
   holds        SeatHold[]
   bookings     Booking[]
   payments     Payment[]

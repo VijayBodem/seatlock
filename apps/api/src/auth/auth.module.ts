@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { getJwtSecret, JWT_ACCESS_TOKEN_EXPIRES_IN } from './jwt.config.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { AdminGuard } from './admin.guard.js';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard],
-  exports: [JwtAuthGuard, JwtModule],
+  providers: [AuthService, JwtAuthGuard, AdminGuard],
+  exports: [JwtAuthGuard, AdminGuard, JwtModule],
 })
 export class AuthModule {}

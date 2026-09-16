@@ -6,10 +6,13 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 
 import { UpdateScreenDto } from './dto/update-screen.dto.js';
 import { ScreensService } from './screens.service.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { AdminGuard } from '../auth/admin.guard.js';
 
 @Controller('screens')
 export class ScreenManagementController {
@@ -20,6 +23,7 @@ export class ScreenManagementController {
     return this.screensService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -28,6 +32,7 @@ export class ScreenManagementController {
     return this.screensService.update(id, updateScreenDto);
   }
 
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.screensService.remove(id);

@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
@@ -19,6 +24,28 @@ export class ScreensService {
 
     if (!venue) {
       throw new NotFoundException(`Venue with id ${venueId} not found`);
+    }
+  }
+
+  private async ensureScreenIsEmpty(screenId: number) {
+    const showtime = await this.database.orm.public.Showtime.first({
+      screenId,
+    });
+
+    if (showtime) {
+      throw new ConflictException(
+        `Screen with id ${screenId} cannot be deleted because it has showtimes`,
+      );
+    }
+
+    const seat = await this.database.orm.public.Seat.first({
+      screenId,
+    });
+
+    if (seat) {
+      throw new ConflictException(
+        `Screen with id ${screenId} cannot be deleted because it has seats`,
+      );
     }
   }
 
@@ -59,6 +86,7 @@ export class ScreensService {
 
   async remove(id: number) {
     await this.findOne(id);
+    await this.ensureScreenIsEmpty(id);
 
     return this.database.orm.public.Screen.where({ id }).delete();
   }

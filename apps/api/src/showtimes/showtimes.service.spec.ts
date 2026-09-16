@@ -27,12 +27,31 @@ describe('ShowtimesService', () => {
   }));
 
   const showtimeSeatAllMock = jest.fn();
+  const showtimeSeatDeleteMock = jest.fn();
 
-  const showtimeSeatWhereMock = jest.fn(() => ({
-    all: showtimeSeatAllMock,
-  }));
+  const showtimeSeatWhereMock = jest.fn(
+    (filter: { showtimeId?: number; id?: number }) => {
+      if (filter.id !== undefined) {
+        return {
+          delete: showtimeSeatDeleteMock,
+        };
+      }
+
+      return {
+        all: showtimeSeatAllMock,
+      };
+    },
+  );
 
   const showtimeSeatCreateMock = jest.fn();
+
+  const seatHoldModelMock = {
+    first: jest.fn(),
+  };
+
+  const bookingModelMock = {
+    first: jest.fn(),
+  };
 
   const screenModelMock = {
     first: jest.fn(),
@@ -74,6 +93,8 @@ describe('ShowtimesService', () => {
         Screen: screenModelMock,
         Showtime: showtimeModelMock,
         ShowtimeSeat: showtimeSeatModelMock,
+        SeatHold: seatHoldModelMock,
+        Booking: bookingModelMock,
       },
     },
     transaction: transactionMock,
@@ -87,7 +108,10 @@ describe('ShowtimesService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-
+    seatHoldModelMock.first.mockResolvedValue(null);
+    bookingModelMock.first.mockResolvedValue(null);
+    showtimeSeatAllMock.mockResolvedValue([]);
+    showtimeSeatDeleteMock.mockResolvedValue(undefined);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ShowtimesService,
@@ -437,7 +461,7 @@ describe('ShowtimesService', () => {
   });
 
   describe('remove', () => {
-    it('should delete an existing showtime', async () => {
+    it('should delete showtime seat inventory before deleting an existing showtime', async () => {
       const existingShowtime = {
         id: 100,
         title: 'Interstellar',
@@ -445,7 +469,26 @@ describe('ShowtimesService', () => {
         screenId: 10,
       };
 
+      const showtimeSeats = [
+        {
+          id: 1001,
+          showtimeId: 100,
+          seatId: 1,
+          status: 'AVAILABLE',
+          price: 20000,
+        },
+        {
+          id: 1002,
+          showtimeId: 100,
+          seatId: 2,
+          status: 'AVAILABLE',
+          price: 35000,
+        },
+      ];
+
       showtimeModelMock.first.mockResolvedValue(existingShowtime);
+      showtimeSeatAllMock.mockResolvedValue(showtimeSeats);
+      showtimeSeatDeleteMock.mockResolvedValue(undefined);
       showtimeDeleteMock.mockResolvedValue(existingShowtime);
 
       await expect(service.remove(100)).resolves.toEqual(existingShowtime);
@@ -454,11 +497,95 @@ describe('ShowtimesService', () => {
         id: 100,
       });
 
+      expect(seatHoldModelMock.first).toHaveBeenCalledWith({
+        showtimeId: 100,
+      });
+
+      expect(bookingModelMock.first).toHaveBeenCalledWith({
+        showtimeId: 100,
+      });
+
+      expect(transactionMock).toHaveBeenCalledTimes(1);
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        showtimeId: 100,
+      });
+
+      expect(showtimeSeatAllMock).toHaveBeenCalledTimes(1);
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        id: 1001,
+      });
+
+      expect(showtimeSeatWhereMock).toHaveBeenCalledWith({
+        id: 1002,
+      });
+
+      expect(showtimeSeatDeleteMock).toHaveBeenCalledTimes(2);
+
       expect(showtimeWhereMock).toHaveBeenCalledWith({
         id: 100,
       });
 
       expect(showtimeDeleteMock).toHaveBeenCalledTimes(1);
+
+      const inventoryDeleteOrder =
+        showtimeSeatDeleteMock.mock.invocationCallOrder.at(-1);
+      const showtimeDeleteOrder =
+        showtimeDeleteMock.mock.invocationCallOrder[0];
+
+      expect(inventoryDeleteOrder).toBeDefined();
+      expect(showtimeDeleteOrder).toBeDefined();
+      expect(inventoryDeleteOrder!).toBeLessThan(showtimeDeleteOrder);
+    });
+
+    it('should reject deleting a showtime with hold history', async () => {
+      showtimeModelMock.first.mockResolvedValue({
+        id: 100,
+        title: 'Interstellar',
+        startsAt: '2026-09-05T19:30:00+05:30',
+        screenId: 10,
+      });
+
+      seatHoldModelMock.first.mockResolvedValue({
+        id: 500,
+        showtimeId: 100,
+      });
+
+      await expect(service.remove(100)).rejects.toThrow(
+        'Showtime with id 100 cannot be deleted because it has booking or hold history',
+      );
+      expect(seatHoldModelMock.first).toHaveBeenCalledWith({
+        showtimeId: 100,
+      });
+
+      expect(bookingModelMock.first).not.toHaveBeenCalled();
+      expect(showtimeDeleteMock).not.toHaveBeenCalled();
+    });
+
+    it('should reject deleting a showtime with booking history', async () => {
+      showtimeModelMock.first.mockResolvedValue({
+        id: 100,
+        title: 'Interstellar',
+        startsAt: '2026-09-05T19:30:00+05:30',
+        screenId: 10,
+      });
+
+      seatHoldModelMock.first.mockResolvedValue(null);
+
+      bookingModelMock.first.mockResolvedValue({
+        id: 600,
+        showtimeId: 100,
+      });
+
+      await expect(service.remove(100)).rejects.toThrow(
+        'Showtime with id 100 cannot be deleted because it has booking or hold history',
+      );
+      expect(bookingModelMock.first).toHaveBeenCalledWith({
+        showtimeId: 100,
+      });
+
+      expect(showtimeDeleteMock).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when deleting a missing showtime', async () => {

@@ -29,17 +29,23 @@ describe('SeatsService', () => {
     where: seatWhereMock,
   };
 
+  const showtimeModelMock = {
+    first: jest.fn(),
+  };
+
   const databaseMock = {
     orm: {
       public: {
         Screen: screenModelMock,
         Seat: seatModelMock,
+        Showtime: showtimeModelMock,
       },
     },
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    showtimeModelMock.first.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -167,6 +173,37 @@ describe('SeatsService', () => {
       ).rejects.toThrow(
         new ConflictException('Seat C7 already exists for screen 10'),
       );
+    });
+
+    it('should reject creating a seat after a showtime exists for the screen', async () => {
+      screenModelMock.first.mockResolvedValue({
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      });
+
+      showtimeModelMock.first.mockResolvedValue({
+        id: 100,
+        screenId: 10,
+      });
+
+      await expect(
+        service.create(10, {
+          row: 'A',
+          number: 1,
+          type: SeatType.STANDARD,
+        }),
+      ).rejects.toThrow(
+        new ConflictException(
+          'Seat layout for screen 10 cannot be changed after showtimes have been created',
+        ),
+      );
+
+      expect(showtimeModelMock.first).toHaveBeenCalledWith({
+        screenId: 10,
+      });
+
+      expect(seatModelMock.create).not.toHaveBeenCalled();
     });
 
     it('should rethrow an unrelated database error during create', async () => {
@@ -392,6 +429,33 @@ describe('SeatsService', () => {
       );
     });
 
+    it('should reject updating a seat after a showtime exists for the screen', async () => {
+      seatModelMock.first.mockResolvedValue({
+        id: 100,
+        row: 'A',
+        number: 1,
+        type: SeatType.STANDARD,
+        screenId: 10,
+      });
+
+      showtimeModelMock.first.mockResolvedValue({
+        id: 200,
+        screenId: 10,
+      });
+
+      await expect(
+        service.update(100, {
+          type: SeatType.PREMIUM,
+        }),
+      ).rejects.toThrow(
+        new ConflictException(
+          'Seat layout for screen 10 cannot be changed after showtimes have been created',
+        ),
+      );
+
+      expect(seatUpdateMock).not.toHaveBeenCalled();
+    });
+
     it('should rethrow an unrelated database error during update', async () => {
       const databaseError = new Error('database unavailable');
 
@@ -441,6 +505,29 @@ describe('SeatsService', () => {
       });
 
       expect(seatDeleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reject deleting a seat after a showtime exists for the screen', async () => {
+      seatModelMock.first.mockResolvedValue({
+        id: 100,
+        row: 'A',
+        number: 1,
+        type: SeatType.STANDARD,
+        screenId: 10,
+      });
+
+      showtimeModelMock.first.mockResolvedValue({
+        id: 200,
+        screenId: 10,
+      });
+
+      await expect(service.remove(100)).rejects.toThrow(
+        new ConflictException(
+          'Seat layout for screen 10 cannot be changed after showtimes have been created',
+        ),
+      );
+
+      expect(seatDeleteMock).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when deleting a missing seat', async () => {

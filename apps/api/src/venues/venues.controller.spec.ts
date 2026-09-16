@@ -1,5 +1,7 @@
 import { jest } from '@jest/globals';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+
 import { VenuesController } from './venues.controller.js';
 import { VenuesService } from './venues.service.js';
 
@@ -14,6 +16,10 @@ describe('VenuesController', () => {
     remove: jest.fn(),
   };
 
+  const jwtServiceMock = {
+    verifyAsync: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -23,6 +29,10 @@ describe('VenuesController', () => {
         {
           provide: VenuesService,
           useValue: venuesServiceMock,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtServiceMock,
         },
       ],
     }).compile();
@@ -65,6 +75,12 @@ describe('VenuesController', () => {
           city: 'Hyderabad',
           address: 'Kukatpally',
         },
+        {
+          id: 2,
+          name: 'INOX GVK One',
+          city: 'Hyderabad',
+          address: 'Banjara Hills',
+        },
       ];
 
       venuesServiceMock.findAll.mockResolvedValue(venues);
@@ -76,7 +92,7 @@ describe('VenuesController', () => {
   });
 
   describe('findOne', () => {
-    it('should return a venue by id', async () => {
+    it('should return one venue', async () => {
       const venue = {
         id: 1,
         name: 'PVR Nexus Mall',
@@ -89,19 +105,21 @@ describe('VenuesController', () => {
       await expect(controller.findOne(1)).resolves.toEqual(venue);
 
       expect(venuesServiceMock.findOne).toHaveBeenCalledWith(1);
+      expect(venuesServiceMock.findOne).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('update', () => {
     it('should update a venue', async () => {
       const dto = {
-        name: 'PVR Updated',
+        name: 'PVR Nexus Mall Updated',
+        city: 'Hyderabad',
       };
 
       const updatedVenue = {
         id: 1,
-        name: 'PVR Updated',
-        city: 'Hyderabad',
+        name: dto.name,
+        city: dto.city,
         address: 'Kukatpally',
       };
 
@@ -115,17 +133,17 @@ describe('VenuesController', () => {
   });
 
   describe('remove', () => {
-    it('should delete a venue', async () => {
-      const deletedVenue = {
+    it('should remove a venue', async () => {
+      const venue = {
         id: 1,
         name: 'PVR Nexus Mall',
         city: 'Hyderabad',
         address: 'Kukatpally',
       };
 
-      venuesServiceMock.remove.mockResolvedValue(deletedVenue);
+      venuesServiceMock.remove.mockResolvedValue(venue);
 
-      await expect(controller.remove(1)).resolves.toEqual(deletedVenue);
+      await expect(controller.remove(1)).resolves.toEqual(venue);
 
       expect(venuesServiceMock.remove).toHaveBeenCalledWith(1);
       expect(venuesServiceMock.remove).toHaveBeenCalledTimes(1);

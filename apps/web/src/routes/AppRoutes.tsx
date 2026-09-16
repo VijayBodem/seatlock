@@ -8,6 +8,9 @@ import { ShowtimesPage } from '../pages/ShowtimesPage'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { RegisterPage } from '../pages/auth/RegisterPage'
 
+import { AdminPage } from '../pages/admin/AdminPage'
+import { AdminRoute } from './AdminRoute'
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -18,6 +21,14 @@ export function AppRoutes() {
         <Route path="bookings" element={<BookingsPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route
+          path="admin"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
+          }
+        />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

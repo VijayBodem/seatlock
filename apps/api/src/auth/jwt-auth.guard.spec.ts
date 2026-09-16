@@ -40,10 +40,11 @@ describe('JwtAuthGuard', () => {
     guard = new JwtAuthGuard(jwtServiceMock as never);
   });
 
-  it('authenticates a valid bearer token and attaches the user', async () => {
+  it('authenticates a customer token and attaches the role', async () => {
     verifyAsyncMock.mockResolvedValue({
       sub: 1,
       email: 'vijay@example.com',
+      role: 'CUSTOMER',
     });
 
     const { context, request } = createContext('Bearer valid-access-token');
@@ -55,6 +56,25 @@ describe('JwtAuthGuard', () => {
     expect(request).toHaveProperty('user', {
       id: 1,
       email: 'vijay@example.com',
+      role: 'CUSTOMER',
+    });
+  });
+
+  it('authenticates an administrator token and attaches the role', async () => {
+    verifyAsyncMock.mockResolvedValue({
+      sub: 2,
+      email: 'admin@example.com',
+      role: 'ADMIN',
+    });
+
+    const { context, request } = createContext('Bearer admin-access-token');
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+
+    expect(request).toHaveProperty('user', {
+      id: 2,
+      email: 'admin@example.com',
+      role: 'ADMIN',
     });
   });
 
@@ -92,9 +112,37 @@ describe('JwtAuthGuard', () => {
     verifyAsyncMock.mockResolvedValue({
       sub: '1',
       email: 'vijay@example.com',
+      role: 'CUSTOMER',
     });
 
     const { context } = createContext('Bearer malformed-payload-token');
+
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      new UnauthorizedException('Invalid access token'),
+    );
+  });
+
+  it('rejects a token without a role', async () => {
+    verifyAsyncMock.mockResolvedValue({
+      sub: 1,
+      email: 'vijay@example.com',
+    });
+
+    const { context } = createContext('Bearer missing-role-token');
+
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      new UnauthorizedException('Invalid access token'),
+    );
+  });
+
+  it('rejects a token with an unsupported role', async () => {
+    verifyAsyncMock.mockResolvedValue({
+      sub: 1,
+      email: 'vijay@example.com',
+      role: 'SUPER_ADMIN',
+    });
+
+    const { context } = createContext('Bearer invalid-role-token');
 
     await expect(guard.canActivate(context)).rejects.toThrow(
       new UnauthorizedException('Invalid access token'),

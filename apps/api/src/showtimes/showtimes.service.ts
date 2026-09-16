@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 
 import { DATABASE } from '../database/database.constants.js';
 import type { db as DatabaseClient } from '../prisma/db.js';
@@ -27,6 +32,28 @@ export class ShowtimesService {
 
     if (!screen) {
       throw new NotFoundException(`Screen with id ${screenId} not found`);
+    }
+  }
+
+  private async ensureShowtimeHasNoHistory(showtimeId: number) {
+    const hold = await this.database.orm.public.SeatHold.first({
+      showtimeId,
+    });
+
+    if (hold) {
+      throw new ConflictException(
+        `Showtime with id ${showtimeId} cannot be deleted because it has booking or hold history`,
+      );
+    }
+
+    const booking = await this.database.orm.public.Booking.first({
+      showtimeId,
+    });
+
+    if (booking) {
+      throw new ConflictException(
+        `Showtime with id ${showtimeId} cannot be deleted because it has booking or hold history`,
+      );
     }
   }
 
@@ -97,7 +124,22 @@ export class ShowtimesService {
 
   async remove(id: number) {
     await this.findOne(id);
+    await this.ensureShowtimeHasNoHistory(id);
 
-    return this.database.orm.public.Showtime.where({ id }).delete();
+    return this.database.transaction(async (tx) => {
+      const showtimeSeats = await tx.orm.public.ShowtimeSeat.where({
+        showtimeId: id,
+      }).all();
+
+      for (const showtimeSeat of showtimeSeats) {
+        await tx.orm.public.ShowtimeSeat.where({
+          id: showtimeSeat.id,
+        }).delete();
+      }
+
+      return tx.orm.public.Showtime.where({
+        id,
+      }).delete();
+    });
   }
 }

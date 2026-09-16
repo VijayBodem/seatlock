@@ -77,6 +77,15 @@ export function AppHeader() {
               </NavLink>
             )}
 
+            {!isRestoring && user?.role === 'ADMIN' && (
+              <NavLink
+                className={({ isActive }) => getNavLinkClass(isActive)}
+                to="/admin"
+              >
+                Admin
+              </NavLink>
+            )}
+
             <label className="sr-only" htmlFor="language-selector">
               {t('language.label')}
             </label>
@@ -181,6 +190,17 @@ export function AppHeader() {
                 {t('common.myBookings')}
               </NavLink>
             )}
+{!isRestoring && user?.role === 'ADMIN' && (
+  <NavLink
+    className={({ isActive }) =>
+      `${getNavLinkClass(isActive)} block`
+    }
+    to="/admin"
+    onClick={closeMobileMenu}
+  >
+    Admin
+  </NavLink>
+)}
 
             <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
               <label className="block">

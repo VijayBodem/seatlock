@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { DATABASE } from '../database/database.constants.js';
@@ -22,16 +22,21 @@ describe('VenuesService', () => {
     first: jest.fn(),
     where: whereMock,
   };
+  const screenModelMock = {
+    first: jest.fn(),
+  };
   const databaseMock = {
     orm: {
       public: {
         Venue: venueModelMock,
+        Screen: screenModelMock,
       },
     },
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    screenModelMock.first.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -167,7 +172,7 @@ describe('VenuesService', () => {
   });
 
   describe('remove', () => {
-    it('should delete an existing venue', async () => {
+    it('should delete an existing venue with no screens', async () => {
       const venue = {
         id: 1,
         name: 'PVR Nexus Mall',
@@ -180,9 +185,47 @@ describe('VenuesService', () => {
 
       await expect(service.remove(1)).resolves.toEqual(venue);
 
-      expect(venueModelMock.first).toHaveBeenCalledWith({ id: 1 });
-      expect(whereMock).toHaveBeenCalledWith({ id: 1 });
+      expect(venueModelMock.first).toHaveBeenCalledWith({
+        id: 1,
+      });
+
+      expect(screenModelMock.first).toHaveBeenCalledWith({
+        venueId: 1,
+      });
+
+      expect(whereMock).toHaveBeenCalledWith({
+        id: 1,
+      });
+
       expect(deleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reject deleting a venue with screens', async () => {
+      venueModelMock.first.mockResolvedValue({
+        id: 1,
+        name: 'PVR Nexus Mall',
+        city: 'Hyderabad',
+        address: 'Kukatpally',
+      });
+
+      screenModelMock.first.mockResolvedValue({
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      });
+
+      await expect(service.remove(1)).rejects.toThrow(
+        new ConflictException(
+          'Venue with id 1 cannot be deleted because it has screens',
+        ),
+      );
+
+      expect(screenModelMock.first).toHaveBeenCalledWith({
+        venueId: 1,
+      });
+
+      expect(whereMock).not.toHaveBeenCalled();
+      expect(deleteMock).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when deleting a missing venue', async () => {
@@ -192,6 +235,7 @@ describe('VenuesService', () => {
         new NotFoundException('Venue with id 999 not found'),
       );
 
+      expect(screenModelMock.first).not.toHaveBeenCalled();
       expect(whereMock).not.toHaveBeenCalled();
       expect(deleteMock).not.toHaveBeenCalled();
     });

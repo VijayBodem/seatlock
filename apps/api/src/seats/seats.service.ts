@@ -30,8 +30,21 @@ export class SeatsService {
     }
   }
 
+  private async ensureSeatLayoutIsMutable(screenId: number) {
+    const showtime = await this.database.orm.public.Showtime.first({
+      screenId,
+    });
+
+    if (showtime) {
+      throw new ConflictException(
+        `Seat layout for screen ${screenId} cannot be changed after showtimes have been created`,
+      );
+    }
+  }
+
   async create(screenId: number, createSeatDto: CreateSeatDto) {
     await this.ensureScreenExists(screenId);
+    await this.ensureSeatLayoutIsMutable(screenId);
 
     const existingSeat = await this.database.orm.public.Seat.first({
       screenId,
@@ -85,6 +98,7 @@ export class SeatsService {
 
   async update(id: number, updateSeatDto: UpdateSeatDto) {
     const seat = await this.findOne(id);
+    await this.ensureSeatLayoutIsMutable(seat.screenId);
 
     const row = updateSeatDto.row ?? seat.row;
     const number = updateSeatDto.number ?? seat.number;
@@ -117,7 +131,9 @@ export class SeatsService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
+    const seat = await this.findOne(id);
+
+    await this.ensureSeatLayoutIsMutable(seat.screenId);
 
     return this.database.orm.public.Seat.where({ id }).delete();
   }

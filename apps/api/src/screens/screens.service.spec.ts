@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { DATABASE } from '../database/database.constants.js';
@@ -29,17 +29,29 @@ describe('ScreensService', () => {
     where: screenWhereMock,
   };
 
+  const seatModelMock = {
+    first: jest.fn(),
+  };
+
+  const showtimeModelMock = {
+    first: jest.fn(),
+  };
+
   const databaseMock = {
     orm: {
       public: {
         Venue: venueModelMock,
         Screen: screenModelMock,
+        Seat: seatModelMock,
+        Showtime: showtimeModelMock,
       },
     },
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    showtimeModelMock.first.mockResolvedValue(null);
+    seatModelMock.first.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -225,7 +237,7 @@ describe('ScreensService', () => {
   });
 
   describe('remove', () => {
-    it('should delete an existing screen', async () => {
+    it('should delete an empty existing screen', async () => {
       const screen = {
         id: 10,
         name: 'Screen 1',
@@ -241,11 +253,79 @@ describe('ScreensService', () => {
         id: 10,
       });
 
+      expect(showtimeModelMock.first).toHaveBeenCalledWith({
+        screenId: 10,
+      });
+
+      expect(seatModelMock.first).toHaveBeenCalledWith({
+        screenId: 10,
+      });
+
       expect(screenWhereMock).toHaveBeenCalledWith({
         id: 10,
       });
 
       expect(screenDeleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should reject deleting a screen with showtimes', async () => {
+      screenModelMock.first.mockResolvedValue({
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      });
+
+      showtimeModelMock.first.mockResolvedValue({
+        id: 100,
+        screenId: 10,
+      });
+
+      await expect(service.remove(10)).rejects.toThrow(
+        new ConflictException(
+          'Screen with id 10 cannot be deleted because it has showtimes',
+        ),
+      );
+
+      expect(showtimeModelMock.first).toHaveBeenCalledWith({
+        screenId: 10,
+      });
+
+      expect(seatModelMock.first).not.toHaveBeenCalled();
+      expect(screenDeleteMock).not.toHaveBeenCalled();
+    });
+
+    it('should reject deleting a screen with seats', async () => {
+      screenModelMock.first.mockResolvedValue({
+        id: 10,
+        name: 'Screen 1',
+        venueId: 1,
+      });
+
+      showtimeModelMock.first.mockResolvedValue(null);
+
+      seatModelMock.first.mockResolvedValue({
+        id: 50,
+        screenId: 10,
+        row: 'A',
+        number: 1,
+        type: 'STANDARD',
+      });
+
+      await expect(service.remove(10)).rejects.toThrow(
+        new ConflictException(
+          'Screen with id 10 cannot be deleted because it has seats',
+        ),
+      );
+
+      expect(showtimeModelMock.first).toHaveBeenCalledWith({
+        screenId: 10,
+      });
+
+      expect(seatModelMock.first).toHaveBeenCalledWith({
+        screenId: 10,
+      });
+
+      expect(screenDeleteMock).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when deleting a missing screen', async () => {
@@ -255,6 +335,8 @@ describe('ScreensService', () => {
         new NotFoundException('Screen with id 999 not found'),
       );
 
+      expect(showtimeModelMock.first).not.toHaveBeenCalled();
+      expect(seatModelMock.first).not.toHaveBeenCalled();
       expect(screenWhereMock).not.toHaveBeenCalled();
       expect(screenDeleteMock).not.toHaveBeenCalled();
     });

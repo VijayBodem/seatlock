@@ -83,10 +83,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     )
 
     setAccessToken(response.accessToken)
-    setUser({
-      id: response.id,
-      email: response.email,
-    })
+   setUser({
+  id: response.id,
+  email: response.email,
+  role: response.role,
+})
   }
 
   function logout() {

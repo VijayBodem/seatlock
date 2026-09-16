@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { SeatType } from './dto/create-seat.dto.js';
@@ -13,6 +14,10 @@ describe('SeatsController', () => {
     findAllByScreen: jest.fn(),
   };
 
+  const jwtServiceMock = {
+    verifyAsync: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -22,6 +27,10 @@ describe('SeatsController', () => {
         {
           provide: SeatsService,
           useValue: seatsServiceMock,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtServiceMock,
         },
       ],
     }).compile();

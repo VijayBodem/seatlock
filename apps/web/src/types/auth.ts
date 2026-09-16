@@ -1,8 +1,10 @@
+export type UserRole = 'CUSTOMER' | 'ADMIN'
+
 export type AuthUser = {
   id: number
   email: string
+  role: UserRole
 }
-
 export type RegisterRequest = {
   email: string
   password: string

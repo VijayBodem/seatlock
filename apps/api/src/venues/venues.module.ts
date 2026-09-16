@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
+
+import { AuthModule } from '../auth/auth.module.js';
 import { VenuesController } from './venues.controller.js';
 import { VenuesService } from './venues.service.js';
 
 @Module({
+  imports: [AuthModule],
   controllers: [VenuesController],
   providers: [VenuesService],
 })

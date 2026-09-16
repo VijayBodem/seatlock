@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ScreensController } from './screens.controller.js';
@@ -12,6 +13,10 @@ describe('ScreensController', () => {
     findAllByVenue: jest.fn(),
   };
 
+  const jwtServiceMock = {
+    verifyAsync: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -21,6 +26,10 @@ describe('ScreensController', () => {
         {
           provide: ScreensService,
           useValue: screensServiceMock,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtServiceMock,
         },
       ],
     }).compile();

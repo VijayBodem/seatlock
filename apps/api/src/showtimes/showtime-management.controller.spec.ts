@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ShowtimeManagementController } from './showtime-management.controller.js';
@@ -14,6 +15,10 @@ describe('ShowtimeManagementController', () => {
     remove: jest.fn(),
   };
 
+  const jwtServiceMock = {
+    verifyAsync: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -23,6 +28,10 @@ describe('ShowtimeManagementController', () => {
         {
           provide: ShowtimesService,
           useValue: showtimesServiceMock,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtServiceMock,
         },
       ],
     }).compile();

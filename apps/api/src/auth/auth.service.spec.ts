@@ -30,13 +30,14 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('normalizes email, hashes the password, and returns only public user fields', async () => {
+    it('normalizes email, hashes the password, and returns public customer fields', async () => {
       usersCreateMock.mockImplementation(
         (input: { email: string; passwordHash: string }) =>
           Promise.resolve({
             id: 1,
             email: input.email,
             passwordHash: input.passwordHash,
+            role: 'CUSTOMER',
             createdAt: '2026-09-07T00:00:00.000Z',
             updatedAt: '2026-09-07T00:00:00.000Z',
           }),
@@ -50,6 +51,7 @@ describe('AuthService', () => {
       expect(result).toEqual({
         id: 1,
         email: 'vijay@example.com',
+        role: 'CUSTOMER',
       });
 
       expect(usersCreateMock).toHaveBeenCalledTimes(1);
@@ -65,13 +67,14 @@ describe('AuthService', () => {
         'correct horse battery staple',
       );
 
+      expect(createInput).not.toHaveProperty('role');
       expect(result).not.toHaveProperty('passwordHash');
       expect(signAsyncMock).not.toHaveBeenCalled();
     });
   });
 
   describe('login', () => {
-    it('returns an access token for valid credentials', async () => {
+    it('returns an access token containing the customer role for valid credentials', async () => {
       const password = 'correct horse battery staple';
       const passwordHash = await hashPassword(password);
 
@@ -79,6 +82,7 @@ describe('AuthService', () => {
         id: 1,
         email: 'vijay@example.com',
         passwordHash,
+        role: 'CUSTOMER',
         createdAt: '2026-09-07T00:00:00.000Z',
         updatedAt: '2026-09-07T00:00:00.000Z',
       });
@@ -95,15 +99,51 @@ describe('AuthService', () => {
       expect(signAsyncMock).toHaveBeenCalledWith({
         sub: 1,
         email: 'vijay@example.com',
+        role: 'CUSTOMER',
       });
 
       expect(result).toEqual({
         id: 1,
         email: 'vijay@example.com',
+        role: 'CUSTOMER',
         accessToken: 'signed-access-token',
       });
 
       expect(result).not.toHaveProperty('passwordHash');
+    });
+
+    it('signs the administrator role from the database into the access token', async () => {
+      const password = 'correct horse battery staple';
+      const passwordHash = await hashPassword(password);
+
+      usersFindByEmailMock.mockResolvedValue({
+        id: 2,
+        email: 'admin@example.com',
+        passwordHash,
+        role: 'ADMIN',
+        createdAt: '2026-09-07T00:00:00.000Z',
+        updatedAt: '2026-09-07T00:00:00.000Z',
+      });
+
+      signAsyncMock.mockResolvedValue('admin-access-token');
+
+      const result = await service.login({
+        email: 'admin@example.com',
+        password,
+      });
+
+      expect(signAsyncMock).toHaveBeenCalledWith({
+        sub: 2,
+        email: 'admin@example.com',
+        role: 'ADMIN',
+      });
+
+      expect(result).toEqual({
+        id: 2,
+        email: 'admin@example.com',
+        role: 'ADMIN',
+        accessToken: 'admin-access-token',
+      });
     });
 
     it('throws UnauthorizedException when the user does not exist', async () => {
@@ -126,6 +166,7 @@ describe('AuthService', () => {
         id: 1,
         email: 'vijay@example.com',
         passwordHash,
+        role: 'CUSTOMER',
         createdAt: '2026-09-07T00:00:00.000Z',
         updatedAt: '2026-09-07T00:00:00.000Z',
       });

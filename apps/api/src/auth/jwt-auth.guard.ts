@@ -26,7 +26,8 @@ export class JwtAuthGuard implements CanActivate {
 
       if (
         typeof payload.sub !== 'number' ||
-        typeof payload.email !== 'string'
+        typeof payload.email !== 'string' ||
+        (payload.role !== 'CUSTOMER' && payload.role !== 'ADMIN')
       ) {
         throw new UnauthorizedException('Invalid access token');
       }
@@ -34,6 +35,7 @@ export class JwtAuthGuard implements CanActivate {
       request.user = {
         id: payload.sub,
         email: payload.email,
+        role: payload.role,
       };
 
       return true;
