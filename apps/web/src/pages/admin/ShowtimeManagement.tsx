@@ -1,9 +1,9 @@
 import {
   type FormEvent,
-  
   useEffect,
   useState,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   createAdminShowtime,
@@ -30,6 +30,12 @@ const EMPTY_FORM: ShowtimeForm = {
   startsAt: '',
 }
 
+const DATE_LOCALES: Record<string, string> = {
+  en: 'en-US',
+  hi: 'hi-IN',
+  te: 'te-IN',
+}
+
 function toDateTimeLocal(value: string): string {
   const date = new Date(value)
 
@@ -43,14 +49,17 @@ function toDateTimeLocal(value: string): string {
   return local.toISOString().slice(0, 16)
 }
 
-function formatStartsAt(value: string): string {
+function formatStartsAt(value: string, language: string): string {
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
     return value
   }
 
-  return new Intl.DateTimeFormat(undefined, {
+  const locale =
+    DATE_LOCALES[language.split('-')[0]] ?? DATE_LOCALES.en
+
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date)
@@ -62,6 +71,8 @@ export function ShowtimeManagement({
   accessToken,
   onBack,
 }: ShowtimeManagementProps) {
+  const { t, i18n } = useTranslation()
+
   const [showtimes, setShowtimes] = useState<AdminShowtime[]>([])
   const [form, setForm] = useState<ShowtimeForm>(EMPTY_FORM)
   const [editingShowtime, setEditingShowtime] =
@@ -71,8 +82,6 @@ export function ShowtimeManagement({
   const [isSaving, setIsSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-
 
   useEffect(() => {
     let cancelled = false
@@ -89,7 +98,7 @@ export function ShowtimeManagement({
           setError(
             loadError instanceof Error
               ? loadError.message
-              : 'Unable to load showtimes.',
+              : t('admin.showtimes.loadError'),
           )
         }
       } finally {
@@ -104,7 +113,7 @@ export function ShowtimeManagement({
     return () => {
       cancelled = true
     }
-  }, [screenId])
+  }, [screenId, t])
 
   function resetForm() {
     setEditingShowtime(null)
@@ -117,6 +126,7 @@ export function ShowtimeManagement({
       title: showtime.title,
       startsAt: toDateTimeLocal(showtime.startsAt),
     })
+    setError(null)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -125,14 +135,14 @@ export function ShowtimeManagement({
     const title = form.title.trim()
 
     if (!title || !form.startsAt) {
-      setError('Title and start time are required.')
+      setError(t('admin.showtimes.required'))
       return
     }
 
     const startsAt = new Date(form.startsAt)
 
     if (Number.isNaN(startsAt.getTime())) {
-      setError('Enter a valid start time.')
+      setError(t('admin.showtimes.invalidStartTime'))
       return
     }
 
@@ -172,7 +182,7 @@ export function ShowtimeManagement({
       setError(
         saveError instanceof Error
           ? saveError.message
-          : 'Unable to save showtime.',
+          : t('admin.showtimes.saveError'),
       )
     } finally {
       setIsSaving(false)
@@ -181,7 +191,9 @@ export function ShowtimeManagement({
 
   async function handleDelete(showtime: AdminShowtime) {
     const confirmed = window.confirm(
-      `Delete "${showtime.title}"? This action cannot be undone.`,
+      t('admin.showtimes.deleteConfirm', {
+        title: showtime.title,
+      }),
     )
 
     if (!confirmed) {
@@ -205,7 +217,7 @@ export function ShowtimeManagement({
       setError(
         deleteError instanceof Error
           ? deleteError.message
-          : 'Unable to delete showtime.',
+          : t('admin.showtimes.deleteError'),
       )
     } finally {
       setDeletingId(null)
@@ -219,20 +231,20 @@ export function ShowtimeManagement({
         onClick={onBack}
         className="mb-6 text-sm font-bold text-blue-600 hover:text-blue-500 dark:text-blue-400"
       >
-         &larr; Back
+        &larr; {t('admin.showtimes.back')}
       </button>
 
       <div className="mb-8">
         <p className="mb-2 text-sm font-bold tracking-widest text-blue-600 uppercase dark:text-blue-400">
-          Administration
+          {t('admin.showtimes.administration')}
         </p>
 
         <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
-          Showtime Management
+          {t('admin.showtimes.heading')}
         </h1>
 
         <p className="mt-3 text-zinc-600 dark:text-zinc-400">
-          Manage showtimes for{' '}
+          {t('admin.showtimes.manageFor')}{' '}
           <span className="font-semibold text-zinc-950 dark:text-white">
             {screenName}
           </span>
@@ -254,37 +266,29 @@ export function ShowtimeManagement({
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-zinc-950 dark:text-white">
-                Showtimes
+                {t('admin.showtimes.listHeading')}
               </h2>
 
               <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                {showtimes.length}{' '}
-                {showtimes.length === 1 ? 'showtime' : 'showtimes'}
+                {t('admin.showtimes.count', {
+                  count: showtimes.length,
+                })}
               </p>
             </div>
-
-            {/* <button
-              type="button"
-              onClick={() => void loadShowtimes()}
-              disabled={isLoading}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-              Refresh
-            </button> */}
           </div>
 
           {isLoading ? (
             <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-              Loading showtimes...
+              {t('admin.showtimes.loading')}
             </div>
           ) : showtimes.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-zinc-300 p-10 text-center dark:border-zinc-700">
               <h3 className="font-bold text-zinc-950 dark:text-white">
-                No showtimes yet
+                {t('admin.showtimes.emptyTitle')}
               </h3>
 
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                Schedule the first showtime for this screen.
+                {t('admin.showtimes.emptyDescription')}
               </p>
             </div>
           ) : (
@@ -299,7 +303,10 @@ export function ShowtimeManagement({
                   </h3>
 
                   <p className="mt-2 text-sm font-medium text-blue-600 dark:text-blue-400">
-                    {formatStartsAt(showtime.startsAt)}
+                    {formatStartsAt(
+                      showtime.startsAt,
+                      i18n.resolvedLanguage ?? i18n.language,
+                    )}
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-2">
@@ -308,7 +315,7 @@ export function ShowtimeManagement({
                       onClick={() => startEditing(showtime)}
                       className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
                     >
-                      Edit
+                      {t('admin.common.edit')}
                     </button>
 
                     <button
@@ -318,8 +325,8 @@ export function ShowtimeManagement({
                       className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
                     >
                       {deletingId === showtime.id
-                        ? 'Deleting...'
-                        : 'Delete'}
+                        ? t('admin.common.deleting')
+                        : t('admin.common.delete')}
                     </button>
                   </div>
                 </article>
@@ -334,19 +341,25 @@ export function ShowtimeManagement({
             className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:sticky lg:top-24"
           >
             <h2 className="text-xl font-bold text-zinc-950 dark:text-white">
-              {editingShowtime ? 'Edit showtime' : 'Add showtime'}
+              {editingShowtime
+                ? t('admin.showtimes.edit')
+                : t('admin.showtimes.add')}
             </h2>
 
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {editingShowtime
-                ? `Editing ${editingShowtime.title}`
-                : `Schedule a showtime for ${screenName}.`}
+                ? t('admin.showtimes.editing', {
+                    title: editingShowtime.title,
+                  })
+                : t('admin.showtimes.scheduleFor', {
+                    screen: screenName,
+                  })}
             </p>
 
             <div className="mt-6 space-y-5">
               <label className="block">
                 <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  Title
+                  {t('admin.showtimes.title')}
                 </span>
 
                 <input
@@ -365,7 +378,7 @@ export function ShowtimeManagement({
 
               <label className="block">
                 <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  Starts at
+                  {t('admin.showtimes.startsAt')}
                 </span>
 
                 <input
@@ -390,10 +403,10 @@ export function ShowtimeManagement({
                 className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 font-bold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSaving
-                  ? 'Saving...'
+                  ? t('admin.common.saving')
                   : editingShowtime
-                    ? 'Save changes'
-                    : 'Create showtime'}
+                    ? t('admin.common.saveChanges')
+                    : t('admin.showtimes.create')}
               </button>
 
               {editingShowtime && (
@@ -403,7 +416,7 @@ export function ShowtimeManagement({
                   disabled={isSaving}
                   className="rounded-xl border border-zinc-300 px-4 py-2.5 font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
-                  Cancel
+                  {t('admin.common.cancel')}
                 </button>
               )}
             </div>

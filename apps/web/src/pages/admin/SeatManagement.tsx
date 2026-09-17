@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   createSeat,
@@ -18,17 +19,6 @@ type SeatManagementProps = {
 
 const seatTypes: SeatType[] = ['STANDARD', 'PREMIUM', 'ACCESSIBLE']
 
-function seatTypeLabel(type: SeatType) {
-  switch (type) {
-    case 'STANDARD':
-      return 'Standard'
-    case 'PREMIUM':
-      return 'Premium'
-    case 'ACCESSIBLE':
-      return 'Accessible'
-  }
-}
-
 function seatTypeClasses(type: SeatType) {
   switch (type) {
     case 'STANDARD':
@@ -47,6 +37,8 @@ export function SeatManagement({
   accessToken,
   onBack,
 }: SeatManagementProps) {
+  const { t } = useTranslation()
+
   const [seats, setSeats] = useState<Seat[]>([])
   const [row, setRow] = useState('')
   const [number, setNumber] = useState('1')
@@ -56,6 +48,10 @@ export function SeatManagement({
   const [isSaving, setIsSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  function seatTypeLabel(seatType: SeatType) {
+    return t(`admin.seats.types.${seatType}`)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -72,7 +68,7 @@ export function SeatManagement({
           setError(
             loadError instanceof Error
               ? loadError.message
-              : 'Unable to load seats.',
+              : t('admin.seats.loadError'),
           )
         }
       } finally {
@@ -87,7 +83,7 @@ export function SeatManagement({
     return () => {
       cancelled = true
     }
-  }, [screenId])
+  }, [screenId, t])
 
   const sortedSeats = useMemo(
     () =>
@@ -122,15 +118,12 @@ export function SeatManagement({
     const parsedNumber = Number(number)
 
     if (!normalizedRow) {
-      setError('Seat row is required.')
+      setError(t('admin.seats.rowRequired'))
       return
     }
 
-    if (
-      !Number.isInteger(parsedNumber) ||
-      parsedNumber < 1
-    ) {
-      setError('Seat number must be a positive integer.')
+    if (!Number.isInteger(parsedNumber) || parsedNumber < 1) {
+      setError(t('admin.seats.numberInvalid'))
       return
     }
 
@@ -171,7 +164,7 @@ export function SeatManagement({
       setError(
         saveError instanceof Error
           ? saveError.message
-          : 'Unable to save seat.',
+          : t('admin.seats.saveError'),
       )
     } finally {
       setIsSaving(false)
@@ -180,7 +173,9 @@ export function SeatManagement({
 
   async function handleDelete(seat: Seat) {
     const confirmed = window.confirm(
-      `Delete seat ${seat.row}${seat.number}? This action cannot be undone.`,
+      t('admin.seats.deleteConfirm', {
+        seat: `${seat.row}${seat.number}`,
+      }),
     )
 
     if (!confirmed) {
@@ -204,7 +199,7 @@ export function SeatManagement({
       setError(
         deleteError instanceof Error
           ? deleteError.message
-          : 'Unable to delete seat.',
+          : t('admin.seats.deleteError'),
       )
     } finally {
       setDeletingId(null)
@@ -218,12 +213,12 @@ export function SeatManagement({
         onClick={onBack}
         className="text-sm font-bold text-blue-600 transition hover:text-blue-500 dark:text-blue-400"
       >
-        ← Back to screens
+        ← {t('admin.seats.backToScreens')}
       </button>
 
       <div className="mt-5">
         <p className="text-xs font-bold tracking-widest text-zinc-500 uppercase">
-          {venueName} · Seat management
+          {venueName} · {t('admin.seats.eyebrow')}
         </p>
 
         <h2 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 dark:text-white">
@@ -231,7 +226,7 @@ export function SeatManagement({
         </h2>
 
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          Configure the physical seat layout before creating showtimes.
+          {t('admin.seats.description')}
         </p>
       </div>
 
@@ -251,23 +246,25 @@ export function SeatManagement({
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <div>
             <h3 className="font-bold text-zinc-950 dark:text-white">
-              {editingId === null ? 'Add seat' : 'Edit seat'}
+              {editingId === null
+                ? t('admin.seats.add')
+                : t('admin.seats.edit')}
             </h3>
 
             <p className="mt-1 text-sm text-zinc-500">
-              Seat positions must be unique within this screen.
+              {t('admin.seats.uniqueDescription')}
             </p>
           </div>
 
           <span className="text-sm font-semibold text-zinc-500">
-            {seats.length} {seats.length === 1 ? 'seat' : 'seats'}
+            {t('admin.seats.count', { count: seats.length })}
           </span>
         </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <label>
             <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-              Row
+              {t('admin.seats.row')}
             </span>
 
             <input
@@ -281,7 +278,7 @@ export function SeatManagement({
 
           <label>
             <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-              Number
+              {t('admin.seats.number')}
             </span>
 
             <input
@@ -296,7 +293,7 @@ export function SeatManagement({
 
           <label>
             <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-              Type
+              {t('admin.seats.type')}
             </span>
 
             <select
@@ -322,10 +319,10 @@ export function SeatManagement({
             className="rounded-xl bg-blue-600 px-5 py-3 font-bold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving
-              ? 'Saving…'
+              ? t('admin.common.saving')
               : editingId === null
-                ? 'Add seat'
-                : 'Save changes'}
+                ? t('admin.seats.add')
+                : t('admin.common.saveChanges')}
           </button>
 
           {editingId !== null && (
@@ -335,7 +332,7 @@ export function SeatManagement({
               disabled={isSaving}
               className="rounded-xl border border-zinc-300 px-5 py-3 font-bold text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
             >
-              Cancel
+              {t('admin.common.cancel')}
             </button>
           )}
         </div>
@@ -344,7 +341,7 @@ export function SeatManagement({
       <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <h3 className="font-bold text-zinc-950 dark:text-white">
-            Seat layout
+            {t('admin.seats.layout')}
           </h3>
 
           <div className="flex flex-wrap gap-3 text-xs font-semibold text-zinc-500">
@@ -362,21 +359,21 @@ export function SeatManagement({
         />
 
         <p className="mt-2 text-center text-[10px] font-bold tracking-[0.25em] text-zinc-400 uppercase">
-          Screen
+          {t('admin.seats.screen')}
         </p>
 
         {isLoading ? (
           <p className="mt-8 text-center text-zinc-500">
-            Loading seats…
+            {t('admin.seats.loading')}
           </p>
         ) : sortedSeats.length === 0 ? (
           <div className="mt-8 rounded-xl border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
             <p className="font-bold text-zinc-950 dark:text-white">
-              No seats yet
+              {t('admin.seats.emptyTitle')}
             </p>
 
             <p className="mt-2 text-sm text-zinc-500">
-              Add the first seat using the form above.
+              {t('admin.seats.emptyDescription')}
             </p>
           </div>
         ) : (
@@ -386,7 +383,9 @@ export function SeatManagement({
                 key={seat.id}
                 type="button"
                 onClick={() => startEditing(seat)}
-                title={`${seat.row}${seat.number} · ${seatTypeLabel(seat.type)}`}
+                title={`${seat.row}${seat.number} · ${seatTypeLabel(
+                  seat.type,
+                )}`}
                 className={`min-w-14 rounded-xl border px-3 py-3 text-sm font-black transition hover:-translate-y-0.5 hover:shadow-md ${seatTypeClasses(
                   seat.type,
                 )}`}
@@ -415,8 +414,8 @@ export function SeatManagement({
               className="rounded-lg border border-red-200 px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
             >
               {deletingId === editingId
-                ? 'Deleting…'
-                : 'Delete selected seat'}
+                ? t('admin.common.deleting')
+                : t('admin.seats.deleteSelected')}
             </button>
           </div>
         )}

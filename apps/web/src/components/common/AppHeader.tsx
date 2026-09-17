@@ -68,6 +68,11 @@ export function AppHeader() {
               {t('common.home')}
             </NavLink>
 
+            <NavLink to="/showtimes">
+              Showtimes
+            </NavLink>
+
+
             {!isRestoring && isAuthenticated && (
               <NavLink
                 className={({ isActive }) => getNavLinkClass(isActive)}
@@ -178,6 +183,11 @@ export function AppHeader() {
             >
               {t('common.home')}
             </NavLink>
+
+            <NavLink to="/showtimes">
+              Showtimes
+            </NavLink>
+
 
             {!isRestoring && isAuthenticated && (
               <NavLink

@@ -1,6 +1,13 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react'
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useAuth } from '../../hooks/useAuth'
+import { ApiError } from '../../services/api'
 import {
   createVenue,
   deleteVenue,
@@ -9,7 +16,6 @@ import {
 } from '../../services/venues.service'
 import type { Venue } from '../../types/venue'
 import { ScreenManagement } from './ScreenManagement'
-import { ApiError } from '../../services/api'
 
 type VenueForm = {
   name: string
@@ -25,6 +31,7 @@ const EMPTY_FORM: VenueForm = {
 
 export function AdminPage() {
   const { accessToken } = useAuth()
+  const { t } = useTranslation()
 
   const [venues, setVenues] = useState<Venue[]>([])
   const [form, setForm] = useState<VenueForm>(EMPTY_FORM)
@@ -35,24 +42,28 @@ export function AdminPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<{
-  venueId: number
-  message: string
-} | null>(null)
+    venueId: number
+    message: string
+  } | null>(null)
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null)
 
   const loadVenues = useCallback(async () => {
     try {
       setError(null)
       setIsLoading(true)
-      setVenues(await getVenues())
+
+      const result = await getVenues()
+      setVenues(result)
     } catch (loadError) {
       setError(
-        loadError instanceof Error ? loadError.message : 'Unable to load venues.',
+        loadError instanceof Error
+          ? loadError.message
+          : t('admin.venues.loadError'),
       )
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [t])
 
 useEffect(() => {
   let cancelled = false
@@ -69,7 +80,7 @@ useEffect(() => {
         setError(
           loadError instanceof Error
             ? loadError.message
-            : 'Unable to load venues.',
+            : t('admin.venues.loadError'),
         )
       }
     } finally {
@@ -84,7 +95,7 @@ useEffect(() => {
   return () => {
     cancelled = true
   }
-}, [])
+}, [t])
 
   function resetForm() {
     setEditingVenue(null)
@@ -98,13 +109,14 @@ useEffect(() => {
       city: venue.city,
       address: venue.address ?? '',
     })
+    setError(null)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!accessToken) {
-      setError('Your session is unavailable. Please sign in again.')
+      setError(t('admin.venues.sessionUnavailable'))
       return
     }
 
@@ -113,7 +125,7 @@ useEffect(() => {
     const address = form.address.trim()
 
     if (!name || !city) {
-      setError('Venue name and city are required.')
+      setError(t('admin.venues.nameCityRequired'))
       return
     }
 
@@ -121,11 +133,11 @@ useEffect(() => {
       setError(null)
       setIsSaving(true)
 
-     const input = {
-  name,
-  city,
-  address,
-}
+      const input = {
+        name,
+        city,
+        address,
+      }
 
       if (editingVenue) {
         const updated = await updateVenue(
@@ -141,99 +153,102 @@ useEffect(() => {
         )
       } else {
         const created = await createVenue(input, accessToken)
+
         setVenues((current) => [...current, created])
       }
 
       resetForm()
     } catch (saveError) {
       setError(
-        saveError instanceof Error ? saveError.message : 'Unable to save venue.',
+        saveError instanceof Error
+          ? saveError.message
+          : t('admin.venues.saveError'),
       )
     } finally {
       setIsSaving(false)
     }
   }
 
- async function handleDelete(venue: Venue) {
-  if (!accessToken) {
-    setError('Your session is unavailable. Please sign in again.')
-    return
-  }
+  async function handleDelete(venue: Venue) {
+    if (!accessToken) {
+      setError(t('admin.venues.sessionUnavailable'))
+      return
+    }
 
-  const confirmed = window.confirm(
-    `Delete "${venue.name}"? This action cannot be undone.`,
-  )
-
-  if (!confirmed) {
-    return
-  }
-
-  try {
-    setError(null)
-    setDeleteError(null)
-    setDeletingId(venue.id)
-
-    await deleteVenue(venue.id, accessToken)
-
-    setVenues((current) =>
-      current.filter((item) => item.id !== venue.id),
+    const confirmed = window.confirm(
+      t('admin.venues.deleteConfirm', {
+        name: venue.name,
+      }),
     )
 
-    if (editingVenue?.id === venue.id) {
-      resetForm()
+    if (!confirmed) {
+      return
     }
-  } catch (deleteError) {
-    let message = 'Unable to delete venue.'
 
-    if (deleteError instanceof ApiError) {
-      if (deleteError.status === 409) {
-        message =
-          'This venue still contains screens. Remove its screens before deleting the venue.'
-      } else if (deleteError.status === 401) {
-        message = 'Your session has expired. Please sign in again.'
-      } else if (deleteError.status === 403) {
-        message = 'Administrator access is required to delete venues.'
-      } else {
+    try {
+      setError(null)
+      setDeleteError(null)
+      setDeletingId(venue.id)
+
+      await deleteVenue(venue.id, accessToken)
+
+      setVenues((current) =>
+        current.filter((item) => item.id !== venue.id),
+      )
+
+      if (editingVenue?.id === venue.id) {
+        resetForm()
+      }
+    } catch (deleteError) {
+      let message = t('admin.venues.deleteError')
+
+      if (deleteError instanceof ApiError) {
+        if (deleteError.status === 409) {
+          message = t('admin.venues.deleteHasScreens')
+        } else if (deleteError.status === 401) {
+          message = t('admin.venues.sessionExpired')
+        } else if (deleteError.status === 403) {
+          message = t('admin.venues.adminRequired')
+        } else {
+          message = deleteError.message
+        }
+      } else if (deleteError instanceof Error) {
         message = deleteError.message
       }
-    } else if (deleteError instanceof Error) {
-      message = deleteError.message
+
+      setDeleteError({
+        venueId: venue.id,
+        message,
+      })
+    } finally {
+      setDeletingId(null)
     }
-
-    setDeleteError({
-      venueId: venue.id,
-      message,
-    })
-  } finally {
-    setDeletingId(null)
   }
-}
-
 
   if (selectedVenue && accessToken) {
-  return (
-    <ScreenManagement
-      venueId={selectedVenue.id}
-      venueName={selectedVenue.name}
-      accessToken={accessToken}
-      onBack={() => setSelectedVenue(null)}
-    />
-  )
-}
+    return (
+      <ScreenManagement
+        venueId={selectedVenue.id}
+        venueName={selectedVenue.name}
+        accessToken={accessToken}
+        onBack={() => setSelectedVenue(null)}
+      />
+    )
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
       <div className="mb-8">
         <p className="mb-2 text-sm font-bold tracking-widest text-blue-600 uppercase dark:text-blue-400">
-          Administration
+          {t('admin.venues.administration')}
         </p>
 
         <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
-          Venue Management
+          {t('admin.venues.heading')}
         </h1>
 
         <p className="mt-3 max-w-2xl text-zinc-600 dark:text-zinc-400">
-          Create and maintain the venues available through SeatLock.
+          {t('admin.venues.description')}
         </p>
       </div>
 
@@ -251,10 +266,13 @@ useEffect(() => {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-zinc-950 dark:text-white">
-                Venues
+                {t('admin.venues.listHeading')}
               </h2>
+
               <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                {venues.length} {venues.length === 1 ? 'venue' : 'venues'}
+                {t('admin.venues.count', {
+                  count: venues.length,
+                })}
               </p>
             </div>
 
@@ -264,21 +282,22 @@ useEffect(() => {
               disabled={isLoading}
               className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
             >
-              Refresh
+              {t('admin.venues.refresh')}
             </button>
           </div>
 
           {isLoading ? (
             <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-              Loading venues...
+              {t('admin.venues.loading')}
             </div>
           ) : venues.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-zinc-300 p-10 text-center dark:border-zinc-700">
               <h3 className="font-bold text-zinc-950 dark:text-white">
-                No venues yet
+                {t('admin.venues.emptyTitle')}
               </h3>
+
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                Create your first venue using the form.
+                {t('admin.venues.emptyDescription')}
               </p>
             </div>
           ) : (
@@ -297,50 +316,53 @@ useEffect(() => {
                   </p>
 
                   <p className="mt-3 min-h-10 text-sm leading-5 text-zinc-500 dark:text-zinc-400">
-                    {venue.address || 'No address provided'}
+                    {venue.address ||
+                      t('admin.venues.noAddress')}
                   </p>
 
                   {deleteError?.venueId === venue.id && (
                     <div
-                        role="alert"
-                        className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm leading-5 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
+                      role="alert"
+                      className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm leading-5 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
                     >
-                        {deleteError.message}
+                      {deleteError.message}
                     </div>
-                    )}
+                  )}
 
-                        <div className="mt-5 flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                setDeleteError(null)
-                                setSelectedVenue(venue)
-                                }}
-                                className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
-                            >
-                                Manage screens
-                            </button>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError(null)
+                        setSelectedVenue(venue)
+                      }}
+                      className="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                    >
+                      {t('admin.venues.manageScreens')}
+                    </button>
 
-                            <button
-                                type="button"
-                                onClick={() => {
-                                setDeleteError(null)
-                                startEditing(venue)
-                                }}
-                                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                            >
-                                Edit
-                            </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError(null)
+                        startEditing(venue)
+                      }}
+                      className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    >
+                      {t('admin.common.edit')}
+                    </button>
 
-                            <button
-                                type="button"
-                                onClick={() => void handleDelete(venue)}
-                                disabled={deletingId === venue.id}
-                                className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
-                            >
-                                {deletingId === venue.id ? 'Deleting...' : 'Delete'}
-                            </button>
-                            </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(venue)}
+                      disabled={deletingId === venue.id}
+                      className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
+                    >
+                      {deletingId === venue.id
+                        ? t('admin.common.deleting')
+                        : t('admin.common.delete')}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -353,20 +375,25 @@ useEffect(() => {
             className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:sticky lg:top-24"
           >
             <h2 className="text-xl font-bold text-zinc-950 dark:text-white">
-              {editingVenue ? 'Edit venue' : 'Add venue'}
+              {editingVenue
+                ? t('admin.venues.edit')
+                : t('admin.venues.add')}
             </h2>
 
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               {editingVenue
-                ? `Editing ${editingVenue.name}`
-                : 'Add another location to SeatLock.'}
+                ? t('admin.venues.editing', {
+                    name: editingVenue.name,
+                  })
+                : t('admin.venues.addDescription')}
             </p>
 
             <div className="mt-6 space-y-5">
               <label className="block">
                 <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  Name
+                  {t('admin.venues.name')}
                 </span>
+
                 <input
                   value={form.name}
                   onChange={(event) =>
@@ -383,8 +410,9 @@ useEffect(() => {
 
               <label className="block">
                 <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  City
+                  {t('admin.venues.city')}
                 </span>
+
                 <input
                   value={form.city}
                   onChange={(event) =>
@@ -401,8 +429,9 @@ useEffect(() => {
 
               <label className="block">
                 <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  Address
+                  {t('admin.venues.address')}
                 </span>
+
                 <textarea
                   value={form.address}
                   onChange={(event) =>
@@ -425,10 +454,10 @@ useEffect(() => {
                 className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 font-bold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSaving
-                  ? 'Saving...'
+                  ? t('admin.common.saving')
                   : editingVenue
-                    ? 'Save changes'
-                    : 'Create venue'}
+                    ? t('admin.common.saveChanges')
+                    : t('admin.venues.create')}
               </button>
 
               {editingVenue && (
@@ -438,7 +467,7 @@ useEffect(() => {
                   disabled={isSaving}
                   className="rounded-xl border border-zinc-300 px-4 py-2.5 font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
-                  Cancel
+                  {t('admin.common.cancel')}
                 </button>
               )}
             </div>
