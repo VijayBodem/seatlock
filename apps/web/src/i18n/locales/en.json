@@ -121,16 +121,18 @@
 },
 
   "common": {
-    "appName": "SeatLock",
-    "home": "Home",
-    "myBookings": "My bookings",
-    "login": "Login",
-    "register": "Register",
-    "logout": "Logout",
-    "restoringSession": "Restoring your session...",
-    "menu": "Menu",
-    "close": "Close"
-  },
+  "appName": "SeatLock",
+  "home": "Home",
+  "showtimes": "Showtimes",
+  "myBookings": "My bookings",
+  "admin": "Admin",
+  "login": "Login",
+  "register": "Register",
+  "logout": "Logout",
+  "restoringSession": "Restoring your session...",
+  "menu": "Menu",
+  "close": "Close"
+},
   "home": {
     "eyebrow": "Real-time seat reservation",
     "title": "Reserve seats without the race condition.",

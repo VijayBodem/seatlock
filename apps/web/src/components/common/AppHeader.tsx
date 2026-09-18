@@ -69,7 +69,7 @@ export function AppHeader() {
             </NavLink>
 
             <NavLink to="/showtimes">
-              Showtimes
+             {t('common.showtimes')}
             </NavLink>
 
 
@@ -87,7 +87,7 @@ export function AppHeader() {
                 className={({ isActive }) => getNavLinkClass(isActive)}
                 to="/admin"
               >
-                Admin
+                {t('common.admin')}
               </NavLink>
             )}
 
@@ -185,7 +185,7 @@ export function AppHeader() {
             </NavLink>
 
             <NavLink to="/showtimes">
-              Showtimes
+            {t('common.showtimes')}
             </NavLink>
 
 
@@ -200,17 +200,17 @@ export function AppHeader() {
                 {t('common.myBookings')}
               </NavLink>
             )}
-{!isRestoring && user?.role === 'ADMIN' && (
-  <NavLink
-    className={({ isActive }) =>
-      `${getNavLinkClass(isActive)} block`
-    }
-    to="/admin"
-    onClick={closeMobileMenu}
-  >
-    Admin
-  </NavLink>
-)}
+              {!isRestoring && user?.role === 'ADMIN' && (
+                <NavLink
+                  className={({ isActive }) =>
+                    `${getNavLinkClass(isActive)} block`
+                  }
+                  to="/admin"
+                  onClick={closeMobileMenu}
+                >
+                {t('common.admin')}
+                </NavLink>
+              )}
 
             <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
               <label className="block">

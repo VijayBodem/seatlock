@@ -534,7 +534,7 @@ describe('BookingsService', () => {
         createdAt: '2026-09-06T00:00:00.000Z',
         showtime: {
           title: 'Avatar',
-          startsAt: '2026-09-09T19:30:00+05:30',
+          startsAt: '2026-09-09T14:00:00.000Z',
           screen: {
             id: 30,
             name: 'Screen 2',
@@ -633,7 +633,7 @@ describe('BookingsService', () => {
       showtimeFirstMock.mockResolvedValue({
         id: 20,
         title: 'Avatar',
-        startsAt: '2026-09-09T19:30:00+05:30',
+        startsAt: '2026-09-09T14:00:00.000Z',
         screenId: 30,
       });
 
@@ -661,7 +661,7 @@ describe('BookingsService', () => {
         createdAt: '2026-09-06T00:00:00.000Z',
         showtime: {
           title: 'Avatar',
-          startsAt: '2026-09-09T19:30:00+05:30',
+          startsAt: '2026-09-09T14:00:00.000Z',
           screen: {
             id: 30,
             name: 'Screen 2',
@@ -707,7 +707,7 @@ describe('BookingsService', () => {
       showtimeFirstMock.mockResolvedValue({
         id: 20,
         title: 'Avatar',
-        startsAt: '2026-09-09T19:30:00+05:30',
+        startsAt: '2026-09-09T14:00:00.000Z',
         screenId: 30,
       });
 
@@ -732,7 +732,7 @@ describe('BookingsService', () => {
       showtimeFirstMock.mockResolvedValue({
         id: 20,
         title: 'Avatar',
-        startsAt: '2026-09-09T19:30:00+05:30',
+        startsAt: '2026-09-09T14:00:00.000Z',
         screenId: 30,
       });
 
@@ -761,7 +761,7 @@ describe('BookingsService', () => {
       showtimeFirstMock.mockResolvedValue({
         id: 20,
         title: 'Avatar',
-        startsAt: '2026-09-09T19:30:00+05:30',
+        startsAt: '2026-09-09T14:00:00.000Z',
         screenId: 30,
       });
 
@@ -928,7 +928,7 @@ describe('BookingsService', () => {
           createdAt: '2026-09-07T00:00:00.000Z',
           showtime: {
             title: 'Interstellar',
-            startsAt: '2026-09-10T20:00:00+05:30',
+            startsAt: '2026-09-10T14:30:00.000Z',
             screen: {
               id: 31,
               name: 'Screen 1',
@@ -963,7 +963,7 @@ describe('BookingsService', () => {
           createdAt: '2026-09-06T00:00:00.000Z',
           showtime: {
             title: 'Avatar',
-            startsAt: '2026-09-09T19:30:00+05:30',
+            startsAt: '2026-09-09T14:00:00.000Z',
             screen: {
               id: 30,
               name: 'Screen 2',
@@ -1024,7 +1024,7 @@ describe('BookingsService', () => {
       showtimeFirstMock.mockResolvedValue({
         id: 20,
         title: 'Avatar',
-        startsAt: '2026-09-09T19:30:00+05:30',
+        startsAt: '2026-09-09T14:00:00.000Z',
         screenId: 30,
       });
 

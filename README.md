@@ -292,6 +292,274 @@ npm --prefix apps/web run dev
 
 The exact environment configuration and supporting infrastructure depend on the local PostgreSQL, Redis, Kafka, and Stripe configuration.
 
+## Docker Development
+
+SeatLock can run as a complete local stack with Docker Compose. The Docker environment includes PostgreSQL, Redis, Kafka, the NestJS API, and the React web application served by nginx.
+
+### Services
+
+| Service | Purpose | Local port |
+| --- | --- | --- |
+| `postgres` | PostgreSQL database and authoritative booking state | `5432` |
+| `redis` | Socket.IO coordination and real-time infrastructure | `6379` |
+| `kafka` | Domain-event transport | `9092` |
+| `api` | NestJS REST API, WebSocket server, payment handling, and background services | `3000` |
+| `web` | Production-built React application served by nginx | `8080` |
+
+Inside the Docker network, services communicate using their Compose service names rather than `localhost`. For example, the API connects to PostgreSQL at `postgres:5432`, Redis at `redis:6379`, and Kafka at `kafka:9092`.
+
+The browser continues to access the application through the host ports:
+
+- Web: `http://localhost:8080`
+- API: `http://localhost:3000`
+
+### Environment Variables
+
+Docker Compose provides the local infrastructure connection values for PostgreSQL, Redis, and Kafka.
+
+Secrets and Stripe credentials should be supplied through environment variables and must not be committed to Git.
+
+The API uses:
+
+```text
+DATABASE_URL
+JWT_SECRET
+WEB_ORIGIN
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+REDIS_URL
+KAFKA_BROKERS
+KAFKA_CLIENT_ID
+KAFKA_DOMAIN_EVENTS_TOPIC
+PORT
+```
+
+The web application uses:
+
+```text
+VITE_API_URL
+VITE_STRIPE_PUBLISHABLE_KEY
+```
+
+The example configuration files are:
+
+```text
+apps/api/.env.example
+apps/web/.env.example
+```
+
+For local non-Docker development, copy the example files to `.env` and replace the placeholders with appropriate development values.
+
+For Docker Compose, infrastructure connection values are defined by `compose.yaml`. Stripe credentials and other secrets can be supplied from the shell or a root Compose environment file.
+
+Do not commit real Stripe keys, webhook signing secrets, JWT secrets, or other credentials.
+
+### Build the Docker Images
+
+From the repository root:
+
+```bash
+docker compose build
+```
+
+This builds:
+
+- the NestJS API image from `apps/api/Dockerfile`
+- the React/nginx image from `apps/web/Dockerfile`
+
+### Start the Infrastructure
+
+PostgreSQL, Redis, and Kafka can be started independently when database migration or seed operations need to be performed first:
+
+```bash
+docker compose up -d postgres redis kafka
+```
+
+Check their status:
+
+```bash
+docker compose ps
+```
+
+Wait until PostgreSQL, Redis, and Kafka report healthy before continuing.
+
+### Database Migrations
+
+SeatLock uses the Prisma migration artifacts stored with the API.
+
+For a new local Docker database, set `DATABASE_URL` in the shell to the PostgreSQL port exposed by Docker:
+
+```text
+postgresql://seatlock:seatlock@localhost:5432/seatlock
+```
+
+Then, from `apps/api`, inspect and apply the migration chain using the Prisma CLI commands supported by the version pinned by the project.
+
+The migration status should be checked before starting application testing.
+
+### Seed Development Data
+
+After the database schema is ready, seed the local development data:
+
+```bash
+npm --prefix apps/api run db:seed
+```
+
+The development seed creates sample venues, screens, seats, showtimes, and showtime-seat inventory for local testing.
+
+The seed is intended for development/demo use and should not be treated as a production data migration.
+
+### Start the Complete Application
+
+Once the database is initialized:
+
+```bash
+docker compose up -d
+```
+
+Check the running services:
+
+```bash
+docker compose ps
+```
+
+The application should then be available at:
+
+```text
+Web: http://localhost:8080
+API: http://localhost:3000
+```
+
+A simple API smoke test can be performed with:
+
+```powershell
+Invoke-RestMethod http://localhost:3000
+```
+
+The expected response is:
+
+```text
+Hello World!
+```
+
+### View Logs
+
+API logs:
+
+```bash
+docker compose logs api --tail=100
+```
+
+Web/nginx logs:
+
+```bash
+docker compose logs web --tail=100
+```
+
+Follow logs continuously:
+
+```bash
+docker compose logs -f api
+```
+
+or:
+
+```bash
+docker compose logs -f web
+```
+
+### Rebuild After Code Changes
+
+The Docker images contain production builds of the API and web application. Source-code changes therefore require the affected image to be rebuilt.
+
+Rebuild and restart the API:
+
+```bash
+docker compose build api
+docker compose up -d api
+```
+
+Rebuild and restart the web application:
+
+```bash
+docker compose build web
+docker compose up -d web
+```
+
+To rebuild and restart the complete stack:
+
+```bash
+docker compose up -d --build
+```
+
+### Stripe Webhooks in Local Development
+
+Stripe cannot directly deliver webhook events to a private `localhost` endpoint. During local development, use the Stripe CLI to forward Stripe test-mode events to the Dockerized API:
+
+```bash
+stripe listen --forward-to localhost:3000/payments/webhook
+```
+
+The Stripe CLI prints a webhook signing secret beginning with `whsec_`. The API's `STRIPE_WEBHOOK_SECRET` must match the signing secret used by the active listener.
+
+The Stripe CLI listener must remain running while testing webhook-dependent payment flows locally.
+
+The browser uses the Stripe publishable key:
+
+```text
+VITE_STRIPE_PUBLISHABLE_KEY
+```
+
+while the API uses the Stripe secret key:
+
+```text
+STRIPE_SECRET_KEY
+```
+
+Use Stripe test-mode credentials for local development.
+
+A deployed environment does not require the Stripe CLI. Stripe should instead be configured with the public HTTPS API webhook endpoint.
+
+### Stop the Application
+
+Stop and remove the Compose containers:
+
+```bash
+docker compose down
+```
+
+Named volumes remain intact, so PostgreSQL, Redis, and Kafka data can persist across normal container restarts.
+
+### Reset the Docker Environment
+
+To remove the containers **and their Compose-managed volumes**:
+
+```bash
+docker compose down -v
+```
+
+This is destructive for local Docker data. In particular, it removes the persisted PostgreSQL database and requires the database migrations and development seed to be applied again.
+
+Use this command only when a clean local environment is intentionally required.
+
+### Docker Files
+
+The Docker configuration is organized as follows:
+
+```text
+compose.yaml
+apps/
+├── api/
+│   ├── Dockerfile
+│   └── .dockerignore
+└── web/
+    ├── Dockerfile
+    ├── .dockerignore
+    └── nginx.conf
+```
+
+`compose.yaml` coordinates the complete local stack, while the application-specific Dockerfiles produce the API and web runtime images.
+
 ## Validation
 
 ### API
@@ -350,11 +618,11 @@ Implemented:
 - Light and dark themes
 - Localized and theme-aware customer and administrative interfaces
 - Backend unit, controller, service, guard, infrastructure, and authorization test coverage
+- Dockerized local development environment
 - Project README, architecture, API overview, and booking-flow documentation
 
 Planned before the demo release:
 
-- Dockerized local environment
 - CI with GitHub Actions
 - Development/demo deployment
 

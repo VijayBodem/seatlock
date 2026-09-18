@@ -41,11 +41,20 @@ type ShowtimeSeatRecord = {
 };
 
 function normalizeTimestamp(value: string): string {
-  if (value.includes('T')) {
-    return value;
+  const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+
+  return normalized.replace(/([+-]\d{2})$/, '$1:00');
+}
+
+function timestampToMillis(value: string): number {
+  const normalized = normalizeTimestamp(value);
+  const timestamp = Date.parse(normalized);
+
+  if (Number.isNaN(timestamp)) {
+    throw new Error(`Invalid database timestamp: ${value}`);
   }
 
-  return value.replace(' ', 'T');
+  return timestamp;
 }
 
 @Injectable()
@@ -63,9 +72,8 @@ export class ShowtimeDiscoveryService {
     const now = Date.now();
 
     const upcomingShowtimes = showtimes.filter(
-      (showtime) => Date.parse(normalizeTimestamp(showtime.startsAt)) > now,
+      (showtime) => timestampToMillis(showtime.startsAt) > now,
     );
-
     for (const showtime of upcomingShowtimes) {
       await this.holdsService.expireStaleHolds(showtime.id);
     }
@@ -131,7 +139,8 @@ export class ShowtimeDiscoveryService {
         };
       })
       .sort(
-        (left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt),
+        (left, right) =>
+          timestampToMillis(left.startsAt) - timestampToMillis(right.startsAt),
       );
   }
 

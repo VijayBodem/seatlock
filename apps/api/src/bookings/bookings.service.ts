@@ -55,11 +55,19 @@ type ShowtimeSeatRecord = {
 };
 
 function normalizeTimestamp(value: string): string {
-  if (value.includes('T')) {
-    return value;
+  let normalized = value.trim().replace(' ', 'T');
+
+  // PostgreSQL may return timezone offsets such as +00 or -05.
+  // JavaScript expects +00:00 / -05:00.
+  normalized = normalized.replace(/([+-]\d{2})$/, '$1:00');
+
+  const timestamp = Date.parse(normalized);
+
+  if (Number.isNaN(timestamp)) {
+    throw new Error(`Invalid database timestamp: ${value}`);
   }
 
-  return value.replace(' ', 'T');
+  return new Date(timestamp).toISOString();
 }
 
 @Injectable()
@@ -102,7 +110,7 @@ export class BookingsService {
             showtimeId: existingBooking.showtimeId,
             holdId: existingBooking.holdId,
             seatIds,
-            createdAt: existingBooking.createdAt,
+            createdAt: normalizeTimestamp(existingBooking.createdAt),
           },
           created: false,
         };
@@ -232,7 +240,7 @@ export class BookingsService {
           showtimeId: createdBooking.showtimeId,
           holdId: createdBooking.holdId,
           seatIds,
-          createdAt: createdBooking.createdAt,
+          createdAt: normalizeTimestamp(createdBooking.createdAt),
         },
         created: true,
       };
@@ -267,8 +275,8 @@ export class BookingsService {
 
     return results.sort((left, right) => {
       const createdAtDifference =
-        new Date(right.createdAt).getTime() -
-        new Date(left.createdAt).getTime();
+        Date.parse(normalizeTimestamp(right.createdAt)) -
+        Date.parse(normalizeTimestamp(left.createdAt));
 
       if (createdAtDifference !== 0) {
         return createdAtDifference;
@@ -368,7 +376,7 @@ export class BookingsService {
         .sort((left, right) => {
           return left - right;
         }),
-      createdAt: booking.createdAt,
+      createdAt: normalizeTimestamp(booking.createdAt),
       showtime: {
         title: showtime.title,
         startsAt: normalizeTimestamp(showtime.startsAt),
