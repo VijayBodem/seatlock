@@ -16,6 +16,9 @@ jobs:
     name: API
     runs-on: ubuntu-latest
 
+    env:
+    JWT_SECRET: ci-test-jwt-secret-not-for-production
+
     defaults:
       run:
         working-directory: apps/api
